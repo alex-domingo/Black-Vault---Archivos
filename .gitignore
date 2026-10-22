@@ -1,0 +1,64 @@
+# ==========================================================
+# Black Vault - .gitignore raíz (cliente + servidor + docs)
+# ==========================================================
+
+# ---------- Dependencias ----------
+node_modules/
+.pnpm-store/
+
+# ---------- Variables de entorno (secretos) ----------
+.env
+.env.*
+!.env.example
+
+# ---------- Angular (cliente) ----------
+black-vault-angular-client/dist/
+black-vault-angular-client/out-tsc/
+black-vault-angular-client/.angular/
+black-vault-angular-client/coverage/
+black-vault-angular-client/tmp/
+black-vault-angular-client/bazel-out/
+__screenshots__/
+.sass-cache/
+
+# ---------- Node / servidor ----------
+dist/
+build/
+coverage/
+.nyc_output/
+*.tsbuildinfo
+
+# ---------- Logs ----------
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# ---------- MongoDB local / respaldos temporales ----------
+data/db/
+*.mongodump
+*.archive
+
+# ---------- Editores ----------
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+.history/
+.idea/
+*.sublime-workspace
+*.swp
+
+# ---------- Sistema operativo ----------
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+.DS_Store
+
+# ---------- Diagramas draw.io (respaldos automáticos) ----------
+*.drawio.bkp
+*.drawio.dtmp
