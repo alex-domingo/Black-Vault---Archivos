@@ -1,0 +1,64 @@
+<mat-toolbar class="barra-superior">
+  <button mat-icon-button (click)="alternarMenu()" aria-label="Mostrar u ocultar el menú" matTooltip="Menú">
+    <mat-icon>menu</mat-icon>
+  </button>
+  <a class="marca" routerLink="/mi-unidad" aria-label="Black Vault, ir a Mi unidad">
+    <mat-icon class="logo" aria-hidden="true">shield_lock</mat-icon>
+    <span>Black Vault</span>
+  </a>
+  <span class="espaciador"></span>
+  <app-indicador-servidor />
+  <button mat-icon-button routerLink="/perfil" aria-label="Mi perfil" matTooltip="Mi perfil">
+    <mat-icon>account_circle</mat-icon>
+  </button>
+</mat-toolbar>
+
+<mat-sidenav-container class="contenedor">
+  <mat-sidenav
+    class="menu-lateral"
+    [mode]="modoMenu()"
+    [opened]="menuAbierto()"
+    (closedStart)="alCerrarMenu()"
+  >
+    <nav aria-label="Navegación principal">
+      <mat-nav-list>
+        @for (enlace of enlaces; track enlace.ruta) {
+          <a
+            mat-list-item
+            [routerLink]="enlace.ruta"
+            routerLinkActive
+            #activo="routerLinkActive"
+            [activated]="activo.isActive"
+            (click)="alNavegar()"
+          >
+            <mat-icon matListItemIcon>{{ enlace.icono }}</mat-icon>
+            <span matListItemTitle>{{ enlace.etiqueta }}</span>
+          </a>
+        }
+      </mat-nav-list>
+
+      <h2 class="titulo-seccion">Administración</h2>
+      <mat-nav-list>
+        @for (enlace of enlacesAdministracion; track enlace.ruta) {
+          <a
+            mat-list-item
+            [routerLink]="enlace.ruta"
+            routerLinkActive
+            #activo="routerLinkActive"
+            [activated]="activo.isActive"
+            (click)="alNavegar()"
+          >
+            <mat-icon matListItemIcon>{{ enlace.icono }}</mat-icon>
+            <span matListItemTitle>{{ enlace.etiqueta }}</span>
+          </a>
+        }
+      </mat-nav-list>
+    </nav>
+  </mat-sidenav>
+
+  <mat-sidenav-content>
+    <main class="contenido">
+      <router-outlet />
+    </main>
+  </mat-sidenav-content>
+</mat-sidenav-container>

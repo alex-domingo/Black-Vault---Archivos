@@ -1,0 +1,20 @@
+@switch (estado().tipo) {
+  @case ('ok') {
+    <span class="indicador ok" [matTooltip]="detalle()" role="status">
+      <mat-icon aria-hidden="true">cloud_done</mat-icon>
+      <span class="texto">Conectado</span>
+    </span>
+  }
+  @case ('error') {
+    <span class="indicador error" [matTooltip]="detalle()" role="status">
+      <mat-icon aria-hidden="true">cloud_off</mat-icon>
+      <span class="texto">Sin conexión</span>
+    </span>
+  }
+  @default {
+    <span class="indicador" [matTooltip]="detalle()" role="status">
+      <mat-icon aria-hidden="true">cloud_sync</mat-icon>
+      <span class="texto">Conectando…</span>
+    </span>
+  }
+}
