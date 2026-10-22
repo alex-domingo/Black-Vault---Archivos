@@ -67,7 +67,7 @@ export const COLECCIONES = {
           $jsonSchema: {
             bsonType: 'object',
             title: 'Usuario',
-            required: ['nombreUsuario', 'correo', 'claveHash', 'nombreCompleto', 'rol', 'activo', 'almacenamiento', 'creadoEn', 'actualizadoEn'],
+            required: ['nombreUsuario', 'correo', 'claveHash', 'nombreCompleto', 'rol', 'activo', 'versionSesion', 'almacenamiento', 'creadoEn', 'actualizadoEn'],
             properties: {
               nombreUsuario: { bsonType: 'string', pattern: '^[a-z0-9._-]{3,30}$' },
               correo: { bsonType: 'string', maxLength: 254, pattern: '^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$' },
@@ -75,6 +75,8 @@ export const COLECCIONES = {
               nombreCompleto: texto(1, 100),
               rol: { enum: ROLES },
               activo: booleano,
+              // Aumenta al cambiar o restablecer la clave y al desactivar: invalida los JWT emitidos antes.
+              versionSesion: enteroNoNegativo,
               almacenamiento: {
                 bsonType: 'object',
                 required: ['usadoBytes', 'cuotaBytes'],

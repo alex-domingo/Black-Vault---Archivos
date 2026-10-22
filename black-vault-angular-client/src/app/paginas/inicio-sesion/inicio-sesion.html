@@ -1,0 +1,53 @@
+<main class="pantalla">
+  <section class="tarjeta" aria-labelledby="titulo-inicio">
+    <header class="encabezado">
+      <span class="logo" aria-hidden="true"><mat-icon>shield_lock</mat-icon></span>
+      <h1 id="titulo-inicio">Black Vault</h1>
+      <p>Gestión documental de la organización</p>
+    </header>
+
+    @if (aviso(); as texto) {
+      <p class="mensaje aviso" role="status"><mat-icon aria-hidden="true">schedule</mat-icon>{{ texto }}</p>
+    }
+    @if (error(); as texto) {
+      <p class="mensaje error" role="alert"><mat-icon aria-hidden="true">error</mat-icon>{{ texto }}</p>
+    }
+
+    <form [formGroup]="formulario" (ngSubmit)="entrar()" novalidate>
+      <mat-form-field>
+        <mat-label>Usuario o correo</mat-label>
+        <input matInput formControlName="identificador" autocomplete="username" autocapitalize="none" spellcheck="false" />
+        <mat-icon matPrefix aria-hidden="true">person</mat-icon>
+        @if (formulario.controls.identificador.hasError('required')) {
+          <mat-error>Escribe tu usuario o correo.</mat-error>
+        }
+      </mat-form-field>
+
+      <mat-form-field>
+        <mat-label>Contraseña</mat-label>
+        <input matInput [type]="mostrarClave() ? 'text' : 'password'" formControlName="clave" autocomplete="current-password" />
+        <mat-icon matPrefix aria-hidden="true">key</mat-icon>
+        <button
+          mat-icon-button
+          matSuffix
+          type="button"
+          (click)="mostrarClave.set(!mostrarClave())"
+          [attr.aria-label]="mostrarClave() ? 'Ocultar contraseña' : 'Mostrar contraseña'"
+        >
+          <mat-icon>{{ mostrarClave() ? 'visibility_off' : 'visibility' }}</mat-icon>
+        </button>
+        @if (formulario.controls.clave.hasError('required')) {
+          <mat-error>Escribe tu contraseña.</mat-error>
+        }
+      </mat-form-field>
+
+      <button mat-flat-button class="entrar" type="submit" [disabled]="enviando()">
+        @if (enviando()) {
+          <mat-spinner diameter="20" aria-label="Iniciando sesión" />
+        } @else {
+          Iniciar sesión
+        }
+      </button>
+    </form>
+  </section>
+</main>

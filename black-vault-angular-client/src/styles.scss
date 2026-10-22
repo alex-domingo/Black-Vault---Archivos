@@ -9,7 +9,7 @@ html {
     (
       color: (
         primary: mat.$violet-palette,
-        tertiary: mat.$cyan-palette,
+        tertiary: mat.$azure-palette,
         theme-type: color-scheme,
       ),
       typography: Roboto,
@@ -33,4 +33,11 @@ body {
 // Íconos Material Symbols (fuente cargada en index.html).
 .material-symbols-outlined {
   font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+}
+
+// Notificaciones de error (MatSnackBar con panelClass 'notificacion-error').
+.notificacion-error {
+  --mat-snack-bar-container-color: var(--mat-sys-error-container);
+  --mat-snack-bar-supporting-text-color: var(--mat-sys-on-error-container);
+  --mat-snack-bar-button-color: var(--mat-sys-on-error-container);
 }

@@ -16,6 +16,15 @@ const esquemaEntorno = z.object({
   ZONA_HORARIA: z.string().min(1).default('America/Guatemala'),
   TAMANO_MAXIMO_MB: z.coerce.number().positive().max(15).default(5),
   CUOTA_POR_DEFECTO_MB: z.coerce.number().positive().default(100),
+  // Clave con la que se firman los JWT. Sin valor por defecto a propósito: una clave
+  // conocida permitiría a cualquiera fabricar sesiones válidas.
+  JWT_SECRETO: z
+    .string({ error: 'Falta JWT_SECRETO en el archivo .env (una cadena aleatoria de al menos 32 caracteres).' })
+    .min(32, 'JWT_SECRETO debe tener al menos 32 caracteres.'),
+  JWT_EXPIRACION: z
+    .string()
+    .regex(/^\d+[smhd]$/, 'JWT_EXPIRACION debe ser un número seguido de s, m, h o d (por ejemplo 8h).')
+    .default('8h'),
 });
 
 const resultado = esquemaEntorno.safeParse(process.env);

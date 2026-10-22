@@ -1,7 +1,7 @@
 {
   "name": "black-vault-express-server",
-  "version": "0.1.0",
-  "description": "Servidor de Black Vault: API REST de gestión documental con Express y MongoDB (GridFS).",
+  "version": "0.2.0",
+  "description": "Servidor de Black Vault: API REST de gesti\u00f3n documental con Express y MongoDB (GridFS).",
   "private": true,
   "type": "module",
   "main": "src/servidor.js",
@@ -11,12 +11,16 @@
   "scripts": {
     "dev": "node --watch --env-file-if-exists=.env src/servidor.js",
     "start": "node --env-file-if-exists=.env src/servidor.js",
+    "semilla": "node --env-file-if-exists=.env scripts/semilla.js",
     "test": "node --env-file-if-exists=.env --test --test-concurrency=1 \"pruebas/**/*.test.js\""
   },
   "dependencies": {
+    "bcryptjs": "^3.0.3",
     "cors": "^2.8.6",
     "express": "^5.3.0",
+    "express-rate-limit": "^8.7.1",
     "helmet": "^8.3.0",
+    "jsonwebtoken": "^9.0.3",
     "mongodb": "^7.7.0",
     "morgan": "^1.12.1",
     "zod": "^4.6.7"

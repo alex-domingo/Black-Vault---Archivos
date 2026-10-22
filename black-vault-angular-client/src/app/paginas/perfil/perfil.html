@@ -1,0 +1,74 @@
+<h1 class="titulo-pagina">Mi perfil</h1>
+
+@if (usuario(); as u) {
+  <div class="rejilla">
+    <section class="tarjeta cuenta" aria-labelledby="titulo-cuenta">
+      <div class="identidad">
+        <app-avatar [nombre]="u.nombreCompleto" [tamano]="64" />
+        <div>
+          <h2 id="titulo-cuenta">{{ u.nombreCompleto }}</h2>
+          <span class="rol" [class.admin]="u.rol === 'administrador'">
+            {{ u.rol === 'administrador' ? 'Administrador' : 'Usuario' }}
+          </span>
+        </div>
+      </div>
+      <dl class="datos">
+        <dt>Usuario</dt>
+        <dd>{{ u.nombreUsuario }}</dd>
+        <dt>Correo</dt>
+        <dd>{{ u.correo }}</dd>
+        <dt>Miembro desde</dt>
+        <dd>{{ u.creadoEn | date: 'longDate' }}</dd>
+        <dt>Último acceso</dt>
+        <dd>{{ u.ultimoAcceso ? (u.ultimoAcceso | date: 'medium') : 'Primera vez' }}</dd>
+      </dl>
+    </section>
+
+    <section class="tarjeta" aria-labelledby="titulo-espacio">
+      <h2 id="titulo-espacio"><mat-icon aria-hidden="true">cloud</mat-icon>Almacenamiento</h2>
+      <p class="uso">
+        <strong>{{ u.almacenamiento.usadoBytes | bytes }}</strong> de {{ u.almacenamiento.cuotaBytes | bytes }}
+      </p>
+      <mat-progress-bar mode="determinate" [value]="porcentajeUso()" [attr.aria-label]="'Espacio usado: ' + porcentajeUso().toFixed(0) + '%'" />
+      <p class="nota">Incluye lo que está en la papelera hasta que se elimine definitivamente.</p>
+    </section>
+
+    <section class="tarjeta clave" aria-labelledby="titulo-clave">
+      <h2 id="titulo-clave"><mat-icon aria-hidden="true">password</mat-icon>Cambiar contraseña</h2>
+      @if (errorClave(); as texto) {
+        <p class="mensaje-error" role="alert">{{ texto }}</p>
+      }
+      <form [formGroup]="formularioClave" #directiva="ngForm" (ngSubmit)="cambiarClave(directiva)" novalidate>
+        <mat-form-field>
+          <mat-label>Contraseña actual</mat-label>
+          <input matInput type="password" formControlName="claveActual" autocomplete="current-password" />
+          @if (formularioClave.controls.claveActual.hasError('required')) {
+            <mat-error>Escribe tu contraseña actual.</mat-error>
+          }
+        </mat-form-field>
+        <mat-form-field>
+          <mat-label>Nueva contraseña</mat-label>
+          <input matInput type="password" formControlName="claveNueva" autocomplete="new-password" />
+          <mat-hint>Mínimo 8 caracteres, con letras y números.</mat-hint>
+          @if (formularioClave.controls.claveNueva.invalid) {
+            <mat-error>{{ mensajeClave(formularioClave.controls.claveNueva) }}</mat-error>
+          }
+        </mat-form-field>
+        <mat-form-field>
+          <mat-label>Confirmar nueva contraseña</mat-label>
+          <input matInput type="password" formControlName="confirmacion" autocomplete="new-password" />
+          @if (formularioClave.controls.confirmacion.hasError('required')) {
+            <mat-error>Repite la nueva contraseña.</mat-error>
+          } @else if (formularioClave.controls.confirmacion.hasError('noCoincide')) {
+            <mat-error>Las contraseñas no coinciden.</mat-error>
+          }
+        </mat-form-field>
+        <div class="acciones">
+          <button mat-flat-button type="submit" [disabled]="guardando()">
+            {{ guardando() ? 'Guardando…' : 'Cambiar contraseña' }}
+          </button>
+        </div>
+      </form>
+    </section>
+  </div>
+}
