@@ -1,0 +1,78 @@
+<h2 mat-dialog-title>{{ editando ? 'Editar usuario' : 'Nuevo usuario' }}</h2>
+
+<mat-dialog-content>
+  @if (error(); as texto) {
+    <p class="mensaje-error" role="alert">{{ texto }}</p>
+  }
+
+  <form [formGroup]="formulario" (ngSubmit)="guardar()" id="formulario-usuario" novalidate>
+    <mat-form-field>
+      <mat-label>Nombre de usuario</mat-label>
+      <input matInput formControlName="nombreUsuario" autocomplete="off" autocapitalize="none" spellcheck="false" />
+      @if (!editando) {
+        <mat-hint>3 a 30: letras sin tilde, números, . - _</mat-hint>
+      }
+      @if (formulario.controls.nombreUsuario.hasError('required')) {
+        <mat-error>El nombre de usuario es obligatorio.</mat-error>
+      } @else if (formulario.controls.nombreUsuario.hasError('pattern')) {
+        <mat-error>Usa de 3 a 30 letras sin tilde, números, punto o guiones.</mat-error>
+      }
+    </mat-form-field>
+
+    <mat-form-field>
+      <mat-label>Rol</mat-label>
+      <mat-select formControlName="rol">
+        <mat-option value="usuario">Usuario</mat-option>
+        <mat-option value="administrador">Administrador</mat-option>
+      </mat-select>
+      @if (esUnoMismo) {
+        <mat-hint>No puedes cambiar tu propio rol.</mat-hint>
+      }
+    </mat-form-field>
+
+    <mat-form-field class="completo">
+      <mat-label>Nombre completo</mat-label>
+      <input matInput formControlName="nombreCompleto" autocomplete="off" />
+      @if (formulario.controls.nombreCompleto.invalid) {
+        <mat-error>Escribe entre 3 y 100 caracteres.</mat-error>
+      }
+    </mat-form-field>
+
+    <mat-form-field class="completo">
+      <mat-label>Correo</mat-label>
+      <input matInput type="email" formControlName="correo" autocomplete="off" />
+      @if (formulario.controls.correo.hasError('required')) {
+        <mat-error>El correo es obligatorio.</mat-error>
+      } @else if (formulario.controls.correo.invalid) {
+        <mat-error>El correo no es válido.</mat-error>
+      }
+    </mat-form-field>
+
+    <mat-form-field>
+      <mat-label>Cuota de almacenamiento</mat-label>
+      <input matInput type="number" min="1" max="102400" formControlName="cuotaMb" />
+      <span matTextSuffix>MB</span>
+      @if (formulario.controls.cuotaMb.invalid) {
+        <mat-error>Entre 1 y 102400 MB.</mat-error>
+      }
+    </mat-form-field>
+
+    @if (!editando) {
+      <mat-form-field>
+        <mat-label>Contraseña inicial</mat-label>
+        <input matInput type="password" formControlName="clave" autocomplete="new-password" />
+        <mat-hint>8+ caracteres, letras y números</mat-hint>
+        @if (formulario.controls.clave.invalid) {
+          <mat-error>{{ mensajeClave(formulario.controls.clave) }}</mat-error>
+        }
+      </mat-form-field>
+    }
+  </form>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button mat-dialog-close type="button">Cancelar</button>
+  <button mat-flat-button type="submit" form="formulario-usuario" [disabled]="guardando()">
+    {{ guardando() ? 'Guardando…' : editando ? 'Guardar cambios' : 'Crear usuario' }}
+  </button>
+</mat-dialog-actions>

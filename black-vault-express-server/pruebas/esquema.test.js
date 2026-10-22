@@ -16,6 +16,7 @@ const usuario = (datos = {}) => ({
   nombreCompleto: 'María Fernanda López',
   rol: 'usuario',
   activo: true,
+  versionSesion: 0,
   almacenamiento: { usadoBytes: 0, cuotaBytes: 1000 },
   ultimoAcceso: null,
   desactivadoEn: null,

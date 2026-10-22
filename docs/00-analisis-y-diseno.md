@@ -201,6 +201,8 @@ actividades ──► usuarios/recursos  (referencias + copia de datos del momen
   nombreCompleto: "María Fernanda López",
   rol: "usuario",                        // "administrador" | "usuario"
   activo: true,
+  versionSesion: 0,                      // aumenta al cambiar/restablecer la clave, cambiar el rol o desactivar:
+                                         // invalida los JWT emitidos antes (va dentro del token como "ver")
   almacenamiento: { usadoBytes: 48213, cuotaBytes: 104857600 },  // embebido 1:1
   ultimoAcceso: ISODate("2026-10-20T15:02:11Z"),
   desactivadoEn: null,
@@ -518,7 +520,8 @@ Las colecciones, validadores e índices se crean al arrancar el servidor y desde
 
 ### 5.14 Usuarios y sesión
 - **Inicio de sesión** con nombre de usuario o correo. Usuario inactivo → **403**. JWT de 8 horas con `sub` y `rol`. Se actualiza `ultimoAcceso`. Historial `INICIO_SESION`; los intentos fallidos sobre usuarios existentes quedan como `INICIO_SESION_FALLIDO`.
-- En **cada petición** el middleware verifica el JWT y vuelve a leer al usuario: si fue desactivado, su sesión deja de servir de inmediato (**401**).
+- En **cada petición** el middleware verifica el JWT y vuelve a leer al usuario: si fue desactivado, o si su `versionSesion` ya no coincide con la del token (cambió o se restableció la clave, o cambió su rol), la sesión deja de servir de inmediato (**401**). Al cambiar la propia clave se devuelve un token nuevo para la sesión actual.
+- El inicio de sesión responde igual si el usuario no existe o si la clave es incorrecta (y tarda lo mismo), para no revelar qué cuentas existen. Se limita a 10 intentos fallidos por IP cada 15 minutos (**429**).
 - El administrador crea, edita (nombre, correo, rol, cuota), activa/desactiva y restablece claves. No puede desactivarse a sí mismo ni dejar el sistema sin administradores activos. La cuota no puede quedar por debajo del espacio ya usado. **No existe eliminación de usuarios**.
 - Desactivar solo impide iniciar sesión: los archivos, las comparticiones y el historial del usuario se conservan intactos. Los usuarios inactivos no aparecen en el directorio para compartir.
 - Política de claves: mínimo 8 caracteres con letras y números; `bcryptjs` con costo 10 (el mínimo que recomienda OWASP; `bcryptjs` es JavaScript puro y un costo mayor haría lentos el inicio de sesión y la semilla).

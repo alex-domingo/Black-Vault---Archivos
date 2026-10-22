@@ -15,6 +15,7 @@ import { provideRouter, withComponentInputBinding } from '@angular/router';
 
 import { routes } from './app.routes';
 import { interceptorErrores } from './nucleo/interceptores/errores.interceptor';
+import { interceptorToken } from './nucleo/interceptores/token.interceptor';
 
 // Formatos de fecha, número y moneda en español de Guatemala (pipes date, number, currency).
 registerLocaleData(localeEsGt);
@@ -23,7 +24,8 @@ export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
     provideRouter(routes, withComponentInputBinding()),
-    provideHttpClient(withFetch(), withInterceptors([interceptorErrores])),
+    // interceptorToken va primero (más externo): recibe los errores ya convertidos por interceptorErrores.
+    provideHttpClient(withFetch(), withInterceptors([interceptorToken, interceptorErrores])),
     { provide: LOCALE_ID, useValue: 'es-GT' },
     provideNativeDateAdapter(),
     { provide: MAT_DATE_LOCALE, useValue: 'es-GT' },

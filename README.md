@@ -24,10 +24,14 @@ Sistema de gestión documental: almacenar, organizar, consultar y compartir arch
 cd black-vault-express-server
 copy .env.example .env
 npm install
+npm run semilla
 npm run dev
 ```
 
-Al arrancar crea la base `black_vault` con sus colecciones, validadores e índices. Comprueba que responde en <http://localhost:8000/api/salud>.
+- En `.env`, cambia `JWT_SECRETO` por una cadena aleatoria de 32 caracteres o más. Puedes generarla con
+  `node -e "console.log(require('crypto').randomBytes(48).toString('base64url'))"`.
+- `npm run semilla` **borra y vuelve a crear** la base `black_vault` con sus colecciones, validadores, índices y los datos de demostración. Pide confirmación (escribe `SI`); con `npm run semilla -- --forzar` no pregunta.
+- `npm run dev` arranca la API. Si la base no existe, crea sus colecciones, validadores e índices (vacías). Comprueba que responde en <http://localhost:8000/api/salud>.
 
 ### 2. Cliente
 
@@ -50,6 +54,27 @@ npm test
 cd black-vault-angular-client
 npx ng test --watch=false
 ```
+
+## Usuarios de demostración
+
+Los crea `npm run semilla`. Se puede entrar con el usuario o con el correo (`usuario@blackvault.gt`).
+
+| Usuario | Nombre | Rol | Contraseña |
+|---|---|---|---|
+| `admin` | Administrador del Sistema | Administrador | `Admin2026` |
+| `mlopez` | María Fernanda López | Usuario | `Usuario2026` |
+| `jramirez` | José Antonio Ramírez | Usuario | `Usuario2026` |
+| `agarcia` | Ana Lucía García | Usuario | `Usuario2026` |
+| `cmorales` | Carlos Eduardo Morales | Usuario | `Usuario2026` |
+| `smendez` | Sofía Alejandra Méndez | Usuario | `Usuario2026` |
+| `rcastillo` | Ricardo Castillo Ordóñez | Usuario | `Usuario2026` |
+| `lhernandez` | Laura Beatriz Hernández | Usuario | `Usuario2026` |
+| `dperez` | Diego Andrés Pérez | Usuario | `Usuario2026` |
+| `vrodriguez` | Valeria Rodríguez Muñoz | Usuario | `Usuario2026` |
+| `fsoto` | Fernando Soto Cifuentes | Usuario | `Usuario2026` |
+| `pjuarez` | Paola Juárez Estrada | Usuario (**inactiva**) | `Usuario2026` |
+
+`pjuarez` está desactivada a propósito: no puede iniciar sesión, pero su información se conserva.
 
 ## MongoDB con autenticación
 
@@ -88,7 +113,7 @@ Una instalación normal de MongoDB es *standalone*: el servidor lo detecta y eje
 |---|---|---|
 | 0 | Análisis y diseño | ✅ |
 | 1 | Base del servidor y del cliente | ✅ |
-| 2 | Autenticación y usuarios | ⏳ |
+| 2 | Autenticación y usuarios | ✅ |
 | 3 | Carpetas y archivos | ⏳ |
 | 4 | Compartición y comentarios | ⏳ |
 | 5 | Papelera e historial | ⏳ |

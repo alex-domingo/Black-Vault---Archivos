@@ -1,4 +1,5 @@
 import { Routes } from '@angular/router';
+import { requiereAdministrador, requiereSesion, soloSinSesion } from './nucleo/guardias/sesion.guard';
 
 /** Las secciones se cargan bajo demanda (lazy loading) para mantener pequeño el bundle inicial. */
 const enConstruccion = () => import('./paginas/en-construccion/en-construccion').then((m) => m.EnConstruccion);
@@ -7,16 +8,12 @@ export const routes: Routes = [
   {
     path: 'iniciar-sesion',
     title: 'Iniciar sesión · Black Vault',
-    loadComponent: enConstruccion,
-    data: {
-      titulo: 'Iniciar sesión',
-      icono: 'login',
-      fase: 2,
-      descripcion: 'Acceso con usuario o correo y contraseña. Cada rol verá solo lo que le corresponde.',
-    },
+    canActivate: [soloSinSesion],
+    loadComponent: () => import('./paginas/inicio-sesion/inicio-sesion').then((m) => m.InicioSesion),
   },
   {
     path: '',
+    canActivate: [requiereSesion],
     loadComponent: () => import('./diseno/contenedor/contenedor').then((m) => m.Contenedor),
     children: [
       { path: '', pathMatch: 'full', redirectTo: 'mi-unidad' },
@@ -78,28 +75,18 @@ export const routes: Routes = [
       {
         path: 'perfil',
         title: 'Mi perfil · Black Vault',
-        loadComponent: enConstruccion,
-        data: {
-          titulo: 'Mi perfil',
-          icono: 'account_circle',
-          fase: 2,
-          descripcion: 'Tus datos, el cambio de contraseña y el espacio de almacenamiento que usas.',
-        },
+        loadComponent: () => import('./paginas/perfil/perfil').then((m) => m.Perfil),
       },
       {
         path: 'administracion/usuarios',
         title: 'Usuarios · Black Vault',
-        loadComponent: enConstruccion,
-        data: {
-          titulo: 'Usuarios',
-          icono: 'manage_accounts',
-          fase: 2,
-          descripcion: 'Alta, edición, activación y desactivación de usuarios, y su cuota de almacenamiento.',
-        },
+        canActivate: [requiereAdministrador],
+        loadComponent: () => import('./paginas/administracion/usuarios/usuarios').then((m) => m.Usuarios),
       },
       {
         path: 'administracion/reportes',
         title: 'Reportes · Black Vault',
+        canActivate: [requiereAdministrador],
         loadComponent: enConstruccion,
         data: {
           titulo: 'Reportes',
