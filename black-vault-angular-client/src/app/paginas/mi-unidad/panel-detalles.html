@@ -1,0 +1,88 @@
+<aside class="panel" aria-label="Detalles">
+  <header class="cabecera">
+    <h2>Detalles</h2>
+    <button mat-icon-button (click)="cerrar.emit()" aria-label="Cerrar detalles" matTooltip="Cerrar">
+      <mat-icon>close</mat-icon>
+    </button>
+  </header>
+
+  @let e = estado();
+  @if (e.tipo === 'cargando') {
+    <mat-progress-bar mode="indeterminate" />
+  } @else if (e.tipo === 'error') {
+    <p class="error" role="alert">{{ e.mensaje }}</p>
+  } @else {
+    <div class="titulo">
+      @if (e.tipo === 'archivo') {
+        <app-icono-archivo tipo="archivo" [extension]="e.datos.extension" />
+      } @else {
+        <app-icono-archivo tipo="carpeta" />
+      }
+      <span>{{ e.datos.nombre }}</span>
+    </div>
+
+    <dl class="datos">
+      <dt>Tipo</dt>
+      <dd>{{ e.tipo === 'carpeta' ? 'Carpeta' : e.datos.extension === 'md' ? 'Markdown (.md)' : 'Texto (.txt)' }}</dd>
+
+      <dt>Propietario</dt>
+      <dd>{{ e.datos.propietario?.nombreCompleto ?? '—' }}</dd>
+
+      <dt>Ubicación</dt>
+      <dd>{{ ubicacion() }}</dd>
+
+      <dt>Tu acceso</dt>
+      <dd>{{ nombresNivel[e.datos.acceso] }}</dd>
+
+      @if (e.tipo === 'archivo') {
+        <dt>Tamaño</dt>
+        <dd>{{ e.datos.bytes | bytes }} ({{ e.datos.bytes }} bytes)</dd>
+
+        <dt>Categoría</dt>
+        <dd>{{ categoria(e.datos.categoria) }}</dd>
+
+        <dt>Etiquetas</dt>
+        <dd>
+          @if (e.datos.etiquetas.length) {
+            <span class="etiquetas">
+              @for (etiqueta of e.datos.etiquetas; track etiqueta) {
+                <span class="etiqueta">{{ etiqueta }}</span>
+              }
+            </span>
+          } @else {
+            —
+          }
+        </dd>
+
+        @if (e.datos.descripcion) {
+          <dt>Descripción</dt>
+          <dd>{{ e.datos.descripcion }}</dd>
+        }
+
+        <dt>Cargado</dt>
+        <dd>{{ e.datos.creadoEn | date: 'medium' }} por {{ e.datos.creador?.nombreCompleto ?? '—' }}</dd>
+
+        <dt>Contenido</dt>
+        <dd>
+          Versión {{ e.datos.version }} · {{ e.datos.contenidoActualizadoEn | date: 'medium' }}
+          por {{ e.datos.editorContenido?.nombreCompleto ?? '—' }}
+        </dd>
+
+        <dt>Modificado</dt>
+        <dd>{{ e.datos.actualizadoEn | date: 'medium' }}</dd>
+
+        <dt>SHA-256</dt>
+        <dd class="hash" [matTooltip]="e.datos.sha256">{{ e.datos.sha256.slice(0, 16) }}…</dd>
+      } @else {
+        <dt>Contiene</dt>
+        <dd>{{ e.datos.elementos.carpetas }} carpeta(s) y {{ e.datos.elementos.archivos }} archivo(s)</dd>
+
+        <dt>Creada</dt>
+        <dd>{{ e.datos.creadoEn | date: 'medium' }} por {{ e.datos.creador?.nombreCompleto ?? '—' }}</dd>
+
+        <dt>Modificada</dt>
+        <dd>{{ e.datos.actualizadoEn | date: 'medium' }}</dd>
+      }
+    </dl>
+  }
+</aside>

@@ -12,6 +12,7 @@ import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { map } from 'rxjs';
 import { Avatar } from '../../compartido/componentes/avatar/avatar';
 import { Sesion } from '../../nucleo/servicios/sesion';
+import { IndicadorEspacio } from '../indicador-espacio/indicador-espacio';
 import { IndicadorServidor } from '../indicador-servidor/indicador-servidor';
 
 interface EnlaceNavegacion {
@@ -35,6 +36,7 @@ interface EnlaceNavegacion {
     MatTooltipModule,
     MatMenuModule,
     IndicadorServidor,
+    IndicadorEspacio,
     Avatar,
   ],
   templateUrl: './contenedor.html',

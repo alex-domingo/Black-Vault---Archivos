@@ -76,6 +76,20 @@ Los crea `npm run semilla`. Se puede entrar con el usuario o con el correo (`usu
 
 `pjuarez` está desactivada a propósito: no puede iniciar sesión, pero su información se conserva.
 
+### Documentos de demostración
+
+La semilla también carga **56 archivos** (.txt y .md) en **38 carpetas** repartidas entre 11 usuarios, con categorías,
+etiquetas y fechas de 2026. El contenido se guarda en GridFS (bucket `contenidos`) y el espacio usado de cada usuario
+coincide con la suma de sus archivos. Algunos casos para probar:
+
+| Usuario | Qué mirar |
+|---|---|
+| `mlopez` | `Contratos/2026/Clientes` (tres niveles), y `Notas de Windows.txt`, que tiene BOM y saltos CRLF: al editarlo y descargarlo se conservan. |
+| `jramirez` | `Registro antiguo de caja chica.txt` está en Latin-1: se puede ver y descargar, pero no editar, para no dañarlo. |
+| cualquiera | **Búsqueda**: por nombre o por texto, con filtros de tipo, categoría, etiqueta y rango de fechas. |
+
+Compartir llega en la Fase 4 y la papelera en la Fase 5; por ahora no hay comparticiones ni archivos eliminados.
+
 ## MongoDB con autenticación
 
 Si tu instancia exige usuario y contraseña, crea un usuario solo para la aplicación. En la consola mongosh de Compass, conectado como administrador:
@@ -114,7 +128,7 @@ Una instalación normal de MongoDB es *standalone*: el servidor lo detecta y eje
 | 0 | Análisis y diseño | ✅ |
 | 1 | Base del servidor y del cliente | ✅ |
 | 2 | Autenticación y usuarios | ✅ |
-| 3 | Carpetas y archivos | ⏳ |
+| 3 | Carpetas y archivos | ✅ |
 | 4 | Compartición y comentarios | ⏳ |
 | 5 | Papelera e historial | ⏳ |
 | 6 | Reportes | ⏳ |

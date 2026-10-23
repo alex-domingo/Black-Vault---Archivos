@@ -1,0 +1,68 @@
+<h2 mat-dialog-title>Subir {{ filas().length === 1 ? 'archivo' : filas().length + ' archivos' }}</h2>
+
+<mat-dialog-content>
+  <p class="destino"><mat-icon aria-hidden="true">folder</mat-icon> Destino: <strong>{{ datos.nombreDestino }}</strong></p>
+
+  <ul class="lista" aria-label="Archivos">
+    @for (fila of filas(); track $index) {
+      <li class="fila" [class]="fila.estado">
+        <mat-icon class="estado" aria-hidden="true">
+          @switch (fila.estado) {
+            @case ('listo') { check_circle }
+            @case ('error') { error }
+            @case ('rechazado') { block }
+            @case ('subiendo') { upload }
+            @default { description }
+          }
+        </mat-icon>
+        <div class="info">
+          <div class="nombre">{{ fila.nombreFinal ?? fila.archivo.name }}</div>
+          <div class="detalle">
+            {{ fila.archivo.size | bytes }}
+            @if (fila.mensaje) {
+              · <span class="mensaje">{{ fila.mensaje }}</span>
+            } @else if (fila.nombreFinal && fila.nombreFinal !== fila.archivo.name) {
+              · se guardó con otro nombre porque ya existía
+            }
+          </div>
+          @if (fila.estado === 'subiendo') {
+            <mat-progress-bar mode="determinate" [value]="fila.progreso" [attr.aria-label]="'Subiendo ' + fila.archivo.name" />
+          }
+        </div>
+      </li>
+    }
+  </ul>
+
+  @if (!terminado()) {
+    <form [formGroup]="formulario" class="clasificacion" novalidate>
+      <mat-form-field>
+        <mat-label>Categoría</mat-label>
+        <mat-select formControlName="categoria">
+          @for (c of categorias; track c.valor) {
+            <mat-option [value]="c.valor">{{ c.etiqueta }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+      <mat-form-field>
+        <mat-label>Descripción (opcional)</mat-label>
+        <input matInput formControlName="descripcion" maxlength="500" />
+      </mat-form-field>
+      <div class="completo"><app-campo-etiquetas [control]="etiquetas" /></div>
+    </form>
+  } @else {
+    <p class="resumen" role="status">
+      Se subieron {{ subidos() }} de {{ validos() }} archivo(s).
+    </p>
+  }
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  @if (!terminado()) {
+    <button mat-button mat-dialog-close type="button" [disabled]="enCurso()">Cancelar</button>
+    <button mat-flat-button type="button" (click)="subir()" [disabled]="enCurso() || validos() === 0">
+      {{ enCurso() ? 'Subiendo…' : 'Subir' }}
+    </button>
+  } @else {
+    <button mat-flat-button type="button" (click)="cerrar()">Listo</button>
+  }
+</mat-dialog-actions>

@@ -41,3 +41,16 @@ body {
   --mat-snack-bar-supporting-text-color: var(--mat-sys-on-error-container);
   --mat-snack-bar-button-color: var(--mat-sys-on-error-container);
 }
+
+/* Texto solo para lectores de pantalla (títulos de página que la interfaz ya muestra de otra forma). */
+.solo-lectores {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}

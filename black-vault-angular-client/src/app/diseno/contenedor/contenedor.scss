@@ -36,6 +36,13 @@
 .menu-lateral {
   width: 256px;
   padding: 8px;
+
+  // El indicador de espacio queda al pie del menú.
+  ::ng-deep .mat-drawer-inner-container {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
   border-right: 1px solid var(--mat-sys-outline-variant);
   border-radius: 0;
 }

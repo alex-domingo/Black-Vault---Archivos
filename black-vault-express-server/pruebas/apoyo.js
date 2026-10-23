@@ -4,6 +4,8 @@ const uriBase = process.env.URI_MONGODB ?? 'mongodb://127.0.0.1:27017/black_vaul
 process.env.URI_MONGODB = uriBase.replace(/\/([^/?]+)(\?|$)/, '/black_vault_pruebas$2');
 process.env.NODE_ENV = 'test';
 process.env.JWT_SECRETO ??= 'secreto-solo-para-las-pruebas-automaticas-0123456789';
+// Límite de subida pequeño para poder probar el rechazo de archivos grandes.
+process.env.TAMANO_MAXIMO_MB = '1';
 
 const { conectar, desconectar, obtenerBd, coleccion } = await import('../src/bd/conexion.js');
 const { prepararEsquema } = await import('../src/bd/esquema.js');

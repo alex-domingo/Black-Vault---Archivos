@@ -1,4 +1,5 @@
 import { Routes } from '@angular/router';
+import { confirmarCambiosSinGuardar } from './nucleo/guardias/cambios-sin-guardar.guard';
 import { requiereAdministrador, requiereSesion, soloSinSesion } from './nucleo/guardias/sesion.guard';
 
 /** Las secciones se cargan bajo demanda (lazy loading) para mantener pequeño el bundle inicial. */
@@ -20,13 +21,18 @@ export const routes: Routes = [
       {
         path: 'mi-unidad',
         title: 'Mi unidad · Black Vault',
-        loadComponent: enConstruccion,
-        data: {
-          titulo: 'Mi unidad',
-          icono: 'folder',
-          fase: 3,
-          descripcion: 'Tus carpetas y archivos .txt y .md: subir, descargar, consultar, renombrar, mover y organizar.',
-        },
+        loadComponent: () => import('./paginas/mi-unidad/mi-unidad').then((m) => m.MiUnidad),
+      },
+      {
+        path: 'mi-unidad/carpeta/:id',
+        title: 'Carpeta · Black Vault',
+        loadComponent: () => import('./paginas/mi-unidad/mi-unidad').then((m) => m.MiUnidad),
+      },
+      {
+        path: 'archivo/:id',
+        title: 'Documento · Black Vault',
+        loadComponent: () => import('./paginas/visor/visor').then((m) => m.Visor),
+        canDeactivate: [confirmarCambiosSinGuardar],
       },
       {
         path: 'compartidos',
@@ -42,13 +48,7 @@ export const routes: Routes = [
       {
         path: 'busqueda',
         title: 'Búsqueda · Black Vault',
-        loadComponent: enConstruccion,
-        data: {
-          titulo: 'Búsqueda',
-          icono: 'search',
-          fase: 3,
-          descripcion: 'Busca por nombre, etiquetas, categoría, tipo y fecha en tus archivos y en los compartidos.',
-        },
+        loadComponent: () => import('./paginas/busqueda/busqueda').then((m) => m.Busqueda),
       },
       {
         path: 'papelera',

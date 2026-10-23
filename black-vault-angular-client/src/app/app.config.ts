@@ -1,5 +1,5 @@
 import { registerLocaleData } from '@angular/common';
-import { provideHttpClient, withFetch, withInterceptors } from '@angular/common/http';
+import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import localeEsGt from '@angular/common/locales/es-GT';
 import {
   ApplicationConfig,
@@ -24,8 +24,9 @@ export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
     provideRouter(routes, withComponentInputBinding()),
+    // Sin withFetch(): el backend XHR sí informa el progreso de las subidas de archivos.
     // interceptorToken va primero (más externo): recibe los errores ya convertidos por interceptorErrores.
-    provideHttpClient(withFetch(), withInterceptors([interceptorToken, interceptorErrores])),
+    provideHttpClient(withInterceptors([interceptorToken, interceptorErrores])),
     { provide: LOCALE_ID, useValue: 'es-GT' },
     provideNativeDateAdapter(),
     { provide: MAT_DATE_LOCALE, useValue: 'es-GT' },
