@@ -78,7 +78,7 @@ Los crea `npm run semilla`. Se puede entrar con el usuario o con el correo (`usu
 
 ### Documentos de demostración
 
-La semilla también carga **56 archivos** (.txt y .md) en **38 carpetas** repartidas entre 11 usuarios, con categorías,
+La semilla también carga **57 archivos** (.txt y .md) en **38 carpetas** repartidas entre 11 usuarios, con categorías,
 etiquetas y fechas de 2026. El contenido se guarda en GridFS (bucket `contenidos`) y el espacio usado de cada usuario
 coincide con la suma de sus archivos. Algunos casos para probar:
 
@@ -88,7 +88,17 @@ coincide con la suma de sus archivos. Algunos casos para probar:
 | `jramirez` | `Registro antiguo de caja chica.txt` está en Latin-1: se puede ver y descargar, pero no editar, para no dañarlo. |
 | cualquiera | **Búsqueda**: por nombre o por texto, con filtros de tipo, categoría, etiqueta y rango de fechas. |
 
-Compartir llega en la Fase 4 y la papelera en la Fase 5; por ahora no hay comparticiones ni archivos eliminados.
+También hay **34 comparticiones** entre áreas y **20 comentarios**. Casos para probar el acceso:
+
+| Usuario | Qué mirar |
+|---|---|
+| `mlopez` | **Compartidos → Por mí**: `Contratos/2026` lo ve Laura (lectura) y la subcarpeta `Clientes` la comenta José. Desde el menú de un archivo o carpeta, **Compartir** muestra el acceso directo y el heredado. |
+| `jramirez` | **Compartidos → Conmigo → Clientes**: puede leer y comentar los contratos, pero no editarlos. |
+| `lhernandez` | Ve los contratos de 2026 (heredado de la carpeta) solo con lectura: los comentarios se ven, pero no puede escribir. |
+| `dperez` | Tiene edición en `Proyecto Atlas` de Sofía: el *checklist* que subió allí es de Sofía y usa su espacio. |
+| `agarcia` | Sigue viendo el informe que le compartió `pjuarez` antes de que su cuenta se desactivara. |
+
+La papelera llega en la Fase 5; por ahora no hay archivos eliminados.
 
 ## MongoDB con autenticación
 
@@ -129,7 +139,7 @@ Una instalación normal de MongoDB es *standalone*: el servidor lo detecta y eje
 | 1 | Base del servidor y del cliente | ✅ |
 | 2 | Autenticación y usuarios | ✅ |
 | 3 | Carpetas y archivos | ✅ |
-| 4 | Compartición y comentarios | ⏳ |
+| 4 | Compartición y comentarios | ✅ |
 | 5 | Papelera e historial | ⏳ |
 | 6 | Reportes | ⏳ |
 | 7 | Carga inicial completa | ⏳ |

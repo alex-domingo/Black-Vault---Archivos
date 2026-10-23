@@ -34,6 +34,20 @@
       <dt>Tu acceso</dt>
       <dd>{{ nombresNivel[e.datos.acceso] }}</dd>
 
+      @if (e.datos.compartidoCon !== undefined) {
+        <dt>Compartido</dt>
+        <dd class="compartido">
+          <span>
+            @switch (e.datos.compartidoCon) {
+              @case (0) { Solo tú }
+              @case (1) { Con 1 persona }
+              @default { Con {{ e.datos.compartidoCon }} personas }
+            }
+          </span>
+          <button mat-stroked-button (click)="compartir.emit()"><mat-icon>person_add</mat-icon>Gestionar acceso</button>
+        </dd>
+      }
+
       @if (e.tipo === 'archivo') {
         <dt>Tamaño</dt>
         <dd>{{ e.datos.bytes | bytes }} ({{ e.datos.bytes }} bytes)</dd>

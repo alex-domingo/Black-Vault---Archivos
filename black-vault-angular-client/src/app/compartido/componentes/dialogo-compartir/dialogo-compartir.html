@@ -1,0 +1,135 @@
+<h2 mat-dialog-title>Compartir "{{ datos.nombre }}"</h2>
+
+<mat-dialog-content>
+  @if (datos.tipo === 'carpeta') {
+    <p class="aviso"><mat-icon aria-hidden="true">info</mat-icon>Quien tenga acceso a esta carpeta también accede a todo lo que contiene.</p>
+  }
+
+  <form class="agregar" [formGroup]="formulario" (ngSubmit)="compartir()" novalidate>
+    <mat-form-field class="campo-persona" subscriptSizing="dynamic">
+      <mat-label>Agregar persona</mat-label>
+      <mat-icon matPrefix aria-hidden="true">person_add</mat-icon>
+      <input matInput formControlName="persona" [matAutocomplete]="lista" placeholder="Nombre, usuario o correo" autocomplete="off" />
+      <mat-autocomplete #lista="matAutocomplete" [displayWith]="mostrarPersona" (optionSelected)="elegir($event.option.value)">
+        @for (u of sugerencias(); track u._id) {
+          <mat-option [value]="u" [disabled]="conAccesoDirecto().has(u._id)">
+            <span class="opcion">
+              <app-avatar [nombre]="u.nombreCompleto" [tamano]="28" />
+              <span class="texto">
+                <span class="nombre">{{ u.nombreCompleto }}</span>
+                <span class="secundario">{{ conAccesoDirecto().has(u._id) ? 'Ya tiene acceso' : u.correo }}</span>
+              </span>
+            </span>
+          </mat-option>
+        } @empty {
+          <mat-option disabled>No hay personas que coincidan</mat-option>
+        }
+      </mat-autocomplete>
+    </mat-form-field>
+
+    <mat-form-field class="campo-permiso" subscriptSizing="dynamic">
+      <mat-label>Permiso</mat-label>
+      <mat-select formControlName="permiso">
+        @for (p of permisos; track p.valor) {
+          <mat-option [value]="p.valor">{{ p.etiqueta }}</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+
+    <button mat-flat-button type="submit" class="boton-compartir" [disabled]="compartiendo()">
+      {{ compartiendo() ? 'Compartiendo…' : 'Compartir' }}
+    </button>
+  </form>
+
+  @if (error(); as texto) {
+    <p class="mensaje-error" role="alert">{{ texto }}</p>
+  }
+
+  <h3 class="seccion">Personas con acceso</h3>
+  @if (errorCarga(); as texto) {
+    <p class="mensaje-error" role="alert">{{ texto }}</p>
+  } @else if (acceso() === null) {
+    <mat-progress-bar mode="indeterminate" aria-label="Cargando" />
+  } @else {
+    <ul class="personas">
+      @if (yo(); as u) {
+        <li class="persona">
+          <app-avatar [nombre]="u.nombreCompleto" [tamano]="36" />
+          <span class="texto">
+            <span class="nombre">{{ u.nombreCompleto }} (tú)</span>
+            <span class="secundario">{{ u.correo }}</span>
+          </span>
+          <span class="nivel-fijo">Propietario</span>
+        </li>
+      }
+
+      @for (c of acceso()!.directas; track c._id) {
+        <li class="persona">
+          <app-avatar [nombre]="c.destinatario?.nombreCompleto ?? '?'" [tamano]="36" />
+          <span class="texto">
+            <span class="nombre">
+              {{ c.destinatario?.nombreCompleto ?? 'Usuario eliminado' }}
+              @if (c.destinatario && !c.destinatario.activo) {
+                <span class="inactivo">cuenta desactivada</span>
+              }
+            </span>
+            <span class="secundario">
+              {{ c.destinatario?.correo }}
+              @if (heredadoSuperior(c); as h) {
+                · tiene {{ etiquetaPermiso(h.permiso).toLowerCase() }} por "{{ h.desde }}"
+              }
+            </span>
+          </span>
+          <button
+            mat-button
+            class="nivel"
+            [matMenuTriggerFor]="menuPermiso"
+            [disabled]="ocupadas().has(c._id)"
+            [attr.aria-label]="'Permiso de ' + (c.destinatario?.nombreCompleto ?? 'la persona') + ': ' + etiquetaPermiso(c.permiso) + '. Cambiar'"
+          >
+            {{ etiquetaPermiso(c.permiso) }}
+            <mat-icon iconPositionEnd>arrow_drop_down</mat-icon>
+          </button>
+          <mat-menu #menuPermiso="matMenu" xPosition="before">
+            @for (p of permisos; track p.valor) {
+              <button mat-menu-item (click)="cambiarPermiso(c, p.valor)" [attr.aria-checked]="c.permiso === p.valor" role="menuitemradio">
+                <mat-icon>{{ c.permiso === p.valor ? 'check' : '' }}</mat-icon>
+                <span class="opcion-permiso">
+                  <span>{{ p.etiqueta }}</span>
+                  <span class="secundario">{{ p.descripcion }}</span>
+                </span>
+              </button>
+            }
+            <button mat-menu-item class="quitar" (click)="retirar(c)">
+              <mat-icon>person_remove</mat-icon>
+              <span>Quitar acceso</span>
+            </button>
+          </mat-menu>
+        </li>
+      } @empty {
+        <li class="vacio">Todavía no lo compartes con nadie.</li>
+      }
+    </ul>
+
+    @if (acceso()!.heredadas.length) {
+      <h3 class="seccion">Acceso heredado</h3>
+      <p class="explicacion">Viene de carpetas que contienen este elemento. Para cambiarlo, comparte de nuevo esa carpeta.</p>
+      <ul class="personas">
+        @for (h of acceso()!.heredadas; track h._id) {
+          <li class="persona">
+            <app-avatar [nombre]="h.destinatario?.nombreCompleto ?? '?'" [tamano]="36" />
+            <span class="texto">
+              <span class="nombre">{{ h.destinatario?.nombreCompleto ?? 'Usuario eliminado' }}</span>
+              <span class="secundario"><mat-icon aria-hidden="true">folder</mat-icon>desde "{{ h.desde.nombre }}"</span>
+            </span>
+            <span class="nivel-fijo">{{ etiquetaPermiso(h.permiso) }}</span>
+          </li>
+        }
+      </ul>
+    }
+  }
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-flat-button mat-dialog-close>Listo</button>
+</mat-dialog-actions>

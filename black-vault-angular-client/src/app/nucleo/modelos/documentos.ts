@@ -41,6 +41,8 @@ export interface Carpeta {
   creadoPor: string;
   creadoEn: string;
   actualizadoEn: string;
+  /** Solo para el propietario: está compartida directamente con alguien. */
+  compartido?: boolean;
 }
 
 export interface Archivo {
@@ -62,6 +64,8 @@ export interface Archivo {
   actualizadoEn: string;
   contenidoActualizadoEn: string;
   contenidoActualizadoPor: string;
+  /** Solo para el propietario: está compartido directamente con alguien. */
+  compartido?: boolean;
 }
 
 export type Elemento = Carpeta | Archivo;
@@ -81,6 +85,8 @@ export interface DetalleCarpeta extends Carpeta {
   ruta: ElementoRuta[];
   acceso: NivelAcceso;
   elementos: { carpetas: number; archivos: number };
+  /** Solo para el propietario: personas con acceso directo. */
+  compartidoCon?: number;
 }
 
 export interface DetalleArchivo extends Archivo {
@@ -89,6 +95,8 @@ export interface DetalleArchivo extends Archivo {
   editorContenido: ResumenUsuario | null;
   ruta: ElementoRuta[];
   acceso: NivelAcceso;
+  /** Solo para el propietario: personas con acceso directo. */
+  compartidoCon?: number;
 }
 
 /** Respuesta de GET /archivos/:id/contenido. */

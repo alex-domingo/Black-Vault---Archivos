@@ -1,5 +1,5 @@
 // Carpetas y archivos de la carga inicial (RD-02 y RD-03).
-// 56 archivos de 11 usuarios, .md y .txt, las cuatro categorías y varios niveles de carpetas.
+// 57 archivos de 11 usuarios, .md y .txt, las cuatro categorías y varios niveles de carpetas.
 // La cantidad por usuario es desigual a propósito, para que el "Top 10" tenga sentido.
 //
 // ruta: carpeta donde va el archivo ('' = raíz). Las carpetas se crean a partir de las rutas.
@@ -96,6 +96,9 @@ export const ARCHIVOS = [
     plantilla: 'informe', datos: { titulo: 'Proyecto Atlas: avance', periodo: 'julio de 2026', indicadores: [['Avance físico', '60 %', '55 %'], ['Presupuesto ejecutado', '58 %', '51 %']], conclusion: 'El proyecto tiene un retraso leve, recuperable en agosto.' } },
   { usuario: 'smendez', ruta: 'Proyectos/Proyecto Atlas/Entregables', nombre: 'Informe de avance Atlas - septiembre.md', categoria: 'informe', etiquetas: ['atlas', 'avance'], fecha: '2026-09-30T16:30',
     plantilla: 'informe', datos: { titulo: 'Proyecto Atlas: avance', periodo: 'septiembre de 2026', indicadores: [['Avance físico', '85 %', '86 %'], ['Presupuesto ejecutado', '82 %', '80 %']], conclusion: 'Se recuperó el retraso. La entrega final se mantiene para noviembre.' } },
+  // Lo subió Diego (edición en "Proyecto Atlas"): pertenece a Sofía y usa su espacio (diseño, I-12).
+  { usuario: 'smendez', creadoPor: 'dperez', ruta: 'Proyectos/Proyecto Atlas/Entregables', nombre: 'Checklist de servidores de pruebas.txt', categoria: 'informe', etiquetas: ['atlas', 'infraestructura'], fecha: '2026-09-28T17:00',
+    plantilla: 'lista', datos: { titulo: 'Checklist de servidores de pruebas - Proyecto Atlas', elementos: ['Servidor de aplicaciones instalado', 'Base de datos de pruebas restaurada', 'Respaldos diarios configurados', 'Accesos entregados al equipo del cliente'] } },
   { usuario: 'smendez', ruta: 'Proyectos/Proyecto Atlas', nombre: 'Cronograma Atlas.txt', categoria: 'administrativo', etiquetas: ['atlas', 'cronograma'], fecha: '2026-06-10T09:00',
     plantilla: 'lista', datos: { titulo: 'Cronograma del Proyecto Atlas', elementos: ['Junio: levantamiento de información', 'Julio-agosto: diseño', 'Septiembre-octubre: implementación', 'Noviembre: entrega final'] } },
   { usuario: 'smendez', ruta: 'Proyectos/Proyecto Quetzal', nombre: 'Propuesta técnica Quetzal.md', categoria: 'contrato', etiquetas: ['quetzal', 'propuesta'], fecha: '2026-08-25T11:20',

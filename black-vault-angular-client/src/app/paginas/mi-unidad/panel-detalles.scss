@@ -60,3 +60,11 @@
 .error {
   color: var(--mat-sys-error);
 }
+
+.compartido {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+}

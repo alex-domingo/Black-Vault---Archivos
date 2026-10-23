@@ -1,0 +1,133 @@
+<header class="cabecera-pagina">
+  <h1>Compartidos</h1>
+  <p>Lo que otras personas compartieron contigo y lo que tú compartiste.</p>
+</header>
+
+<nav mat-tab-nav-bar [tabPanel]="panel" aria-label="Vistas de compartidos">
+  <a mat-tab-link routerLink="/compartidos" [active]="vistaActual() === 'conmigo'">
+    <mat-icon aria-hidden="true">folder_shared</mat-icon>Conmigo
+  </a>
+  <a mat-tab-link routerLink="/compartidos" [queryParams]="{ vista: 'por-mi' }" [active]="vistaActual() === 'por-mi'">
+    <mat-icon aria-hidden="true">share</mat-icon>Por mí
+  </a>
+</nav>
+
+<mat-tab-nav-panel #panel>
+  <div class="filtros">
+    <mat-form-field class="buscar" subscriptSizing="dynamic">
+      <mat-label>Buscar por nombre</mat-label>
+      <mat-icon matPrefix aria-hidden="true">search</mat-icon>
+      <input matInput [formControl]="buscar" autocomplete="off" />
+    </mat-form-field>
+    <mat-form-field class="tipo" subscriptSizing="dynamic">
+      <mat-label>Tipo</mat-label>
+      <mat-select [formControl]="tipo">
+        <mat-option value="">Todos</mat-option>
+        <mat-option value="carpeta">Carpetas</mat-option>
+        <mat-option value="archivo">Archivos</mat-option>
+      </mat-select>
+    </mat-form-field>
+    @if (hayFiltros()) {
+      <button mat-button type="button" (click)="limpiar()"><mat-icon>filter_alt_off</mat-icon>Quitar filtros</button>
+    }
+  </div>
+
+  <div class="resultados">
+    @if (cargando()) {
+      <mat-progress-bar mode="indeterminate" class="carga" aria-label="Cargando" />
+    }
+
+    @if (error(); as texto) {
+      <p class="vacio error" role="alert">{{ texto }}</p>
+    } @else if (conmigo(); as lista) {
+      <div class="lista" role="table" aria-label="Compartidos conmigo">
+        <div class="fila conmigo encabezado" role="row">
+          <span role="columnheader">Nombre</span>
+          <span role="columnheader" class="col-persona">Propietario</span>
+          <span role="columnheader">Tu permiso</span>
+          <span role="columnheader" class="col-fecha">Compartido</span>
+        </div>
+        @for (c of lista; track c._id) {
+          <a class="fila conmigo" role="row" [routerLink]="enlace(c.recurso, false)">
+            <span class="nombre" role="cell">
+              <app-icono-archivo [tipo]="c.recurso.tipo" [extension]="c.recurso.tipo === 'archivo' ? c.recurso.extension : undefined" />
+              <span class="titulo">{{ c.recurso.nombre }}</span>
+            </span>
+            <span class="col-persona persona" role="cell">
+              <app-avatar [nombre]="c.propietario?.nombreCompleto ?? '?'" [tamano]="28" />
+              <span class="texto-persona">{{ c.propietario?.nombreCompleto ?? '—' }}</span>
+            </span>
+            <span role="cell"><span class="permiso" [class]="c.permiso">{{ etiquetaPermiso(c.permiso) }}</span></span>
+            <span class="col-fecha" role="cell">{{ c.compartidoEn | date: 'mediumDate' }}</span>
+          </a>
+        } @empty {
+          @if (!cargando()) {
+            <p class="vacio">
+              <mat-icon aria-hidden="true">folder_shared</mat-icon>
+              {{ hayFiltros() ? 'Nada coincide con los filtros.' : 'Nadie ha compartido nada contigo todavía.' }}
+            </p>
+          }
+        }
+      </div>
+    } @else if (porMi(); as lista) {
+      <div class="lista" role="table" aria-label="Compartidos por mí">
+        <div class="fila por-mi encabezado" role="row">
+          <span role="columnheader">Nombre</span>
+          <span role="columnheader" class="col-personas">Con quién</span>
+          <span role="columnheader" class="col-fecha">Último cambio</span>
+          <span role="columnheader"><span class="oculto">Acciones</span></span>
+        </div>
+        @for (g of lista; track g.recurso._id) {
+          <div class="fila por-mi" role="row">
+            <a class="nombre" role="cell" [routerLink]="enlace(g.recurso, true)">
+              <app-icono-archivo [tipo]="g.recurso.tipo" [extension]="g.recurso.tipo === 'archivo' ? g.recurso.extension : undefined" />
+              <span class="titulo">{{ g.recurso.nombre }}</span>
+            </a>
+            <span class="personas col-personas" role="cell" [matTooltip]="nombres(g)">
+              <span class="avatares" aria-hidden="true">
+                @for (c of g.comparticiones.slice(0, maximoAvatares); track c._id) {
+                  <app-avatar [nombre]="c.destinatario?.nombreCompleto ?? '?'" [tamano]="28" />
+                }
+              </span>
+              <span class="texto-persona">
+                @if (g.comparticiones.length === 1) {
+                  {{ g.comparticiones[0].destinatario?.nombreCompleto }} · {{ etiquetaPermiso(g.comparticiones[0].permiso) }}
+                } @else {
+                  {{ g.comparticiones.length }} personas
+                }
+              </span>
+            </span>
+            <span class="col-fecha" role="cell">{{ g.ultimoCambio | date: 'mediumDate' }}</span>
+            <span role="cell" class="acciones">
+              <button mat-icon-button (click)="gestionar(g)" matTooltip="Gestionar acceso" [attr.aria-label]="'Gestionar el acceso a ' + g.recurso.nombre">
+                <mat-icon>manage_accounts</mat-icon>
+              </button>
+            </span>
+          </div>
+        } @empty {
+          @if (!cargando()) {
+            <p class="vacio">
+              <mat-icon aria-hidden="true">share</mat-icon>
+              @if (hayFiltros()) {
+                Nada coincide con los filtros.
+              } @else {
+                Aún no compartes nada. En <a routerLink="/mi-unidad">Mi unidad</a>, abre el menú de un archivo o carpeta y elige <strong>Compartir</strong>.
+              }
+            </p>
+          }
+        }
+      </div>
+    }
+
+    @if (total() > 0) {
+      <mat-paginator
+        [length]="total()"
+        [pageIndex]="pagina()"
+        [pageSize]="limite()"
+        [pageSizeOptions]="[10, 20, 50]"
+        (page)="cambiarPagina($event)"
+        aria-label="Páginas"
+      />
+    }
+  </div>
+</mat-tab-nav-panel>

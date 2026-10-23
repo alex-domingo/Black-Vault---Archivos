@@ -5,15 +5,16 @@
 // Uso:  npm run semilla              (pide confirmación)
 //       npm run semilla -- --forzar  (sin confirmación)
 //
-// Contenido actual: usuarios, carpetas, archivos en GridFS y su historial.
-// Las fases siguientes agregan comparticiones, papelera y el resto del historial.
+// Contenido actual: usuarios, carpetas, archivos en GridFS, comparticiones, comentarios
+// y su historial. Las fases siguientes agregan la papelera y el resto del historial.
 import { createInterface } from 'node:readline/promises';
 import { entorno, uriSinCredenciales } from '../src/config/entorno.js';
 import { conectar, desconectar } from '../src/bd/conexion.js';
 import { prepararEsquema } from '../src/bd/esquema.js';
 import { generarHash } from '../src/servicios/claves.js';
 import { CLAVE_ADMINISTRADOR, CLAVE_USUARIOS, USUARIOS_SEMILLA } from './datos-semilla/usuarios.js';
-import { cargarDocumentos } from './semilla-documentos.js';
+import { prepararComparticiones } from './semilla-comparticiones.js';
+import { cargarDocumentos, iniciosDeSesion } from './semilla-documentos.js';
 
 const MB = 1024 * 1024;
 
@@ -100,7 +101,17 @@ async function ejecutar() {
 
   const usuarios = await cargarUsuarios(bd);
   const documentos = await cargarDocumentos(bd, usuarios);
-  const actividades = [...historialDeUsuarios(usuarios), ...documentos.actividades].sort((a, b) => a.fecha - b.fecha);
+
+  const compartido = prepararComparticiones(usuarios, documentos.carpetas, documentos.archivos);
+  await bd.collection('comparticiones').insertMany(compartido.comparticiones);
+  await bd.collection('archivos').bulkWrite(
+    [...compartido.comentarios].map(([id, comentarios]) => ({
+      updateOne: { filter: { _id: documentos.archivos.find((a) => a._id.toString() === id)._id }, update: { $set: { comentarios } } },
+    })),
+  );
+
+  const acciones = [...documentos.actividades, ...compartido.actividades];
+  const actividades = [...historialDeUsuarios(usuarios), ...acciones, ...iniciosDeSesion(acciones)].sort((a, b) => a.fecha - b.fecha);
   await bd.collection('actividades').insertMany(actividades);
 
   // Último acceso de cada usuario = su último inicio de sesión registrado.
@@ -113,7 +124,8 @@ async function ejecutar() {
 
   const bytes = documentos.archivos.reduce((s, a) => s + a.contenido.bytes, 0);
   console.log(
-    `\n✔ ${usuarios.length} usuarios · ${documentos.carpetas.length} carpetas · ${documentos.archivos.length} archivos en GridFS (${(bytes / 1024).toFixed(1)} KB) · ${actividades.length} actividades\n`,
+    `\n✔ ${usuarios.length} usuarios · ${documentos.carpetas.length} carpetas · ${documentos.archivos.length} archivos en GridFS (${(bytes / 1024).toFixed(1)} KB)` +
+      ` · ${compartido.comparticiones.length} comparticiones · ${[...compartido.comentarios.values()].flat().length} comentarios · ${actividades.length} actividades\n`,
   );
   console.table(
     usuarios.map((u) => ({

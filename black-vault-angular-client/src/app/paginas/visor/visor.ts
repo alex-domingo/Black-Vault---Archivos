@@ -2,6 +2,7 @@ import { DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, HostListener, computed, inject, input, signal } from '@angular/core';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { MatButtonModule } from '@angular/material/button';
+import { MatDialog } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
@@ -18,6 +19,7 @@ import { ArchivosApi } from '../../nucleo/servicios/archivos-api';
 import { Notificador } from '../../nucleo/servicios/notificador';
 import { ConCambiosSinGuardar } from '../../nucleo/guardias/cambios-sin-guardar.guard';
 import { PanelDetalles } from '../mi-unidad/panel-detalles';
+import { Comentarios } from './comentarios';
 
 type Estado =
   | { tipo: 'cargando' }
@@ -30,7 +32,19 @@ const sinCr = (texto: string) => texto.replace(/\r\n/g, '\n');
 /** Vista previa (Markdown renderizado o texto) y edición del contenido. */
 @Component({
   selector: 'app-visor',
-  imports: [DatePipe, RouterLink, MatButtonModule, MatIconModule, MatProgressBarModule, MatTooltipModule, IconoArchivo, VistaMarkdown, BytesPipe, PanelDetalles],
+  imports: [
+    DatePipe,
+    RouterLink,
+    MatButtonModule,
+    MatIconModule,
+    MatProgressBarModule,
+    MatTooltipModule,
+    IconoArchivo,
+    VistaMarkdown,
+    BytesPipe,
+    PanelDetalles,
+    Comentarios,
+  ],
   templateUrl: './visor.html',
   styleUrl: './visor.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -39,6 +53,7 @@ export class Visor implements ConCambiosSinGuardar {
   private readonly api = inject(ArchivosApi);
   private readonly notificador = inject(Notificador);
   private readonly almacenamiento = inject(Almacenamiento);
+  private readonly dialogo = inject(MatDialog);
 
   readonly id = input.required<string>();
 
@@ -49,6 +64,8 @@ export class Visor implements ConCambiosSinGuardar {
   protected readonly errorGuardar = signal<string | null>(null);
   protected readonly conflicto = signal(false);
   protected readonly verDetalles = signal(false);
+  /** Hace que el panel de detalles vuelva a consultar (por ejemplo, tras compartir). */
+  protected readonly versionDetalles = signal(0);
   protected readonly nombresNivel = NOMBRE_NIVEL;
 
   protected readonly estado = toSignal(
@@ -86,9 +103,10 @@ export class Visor implements ConCambiosSinGuardar {
   protected readonly volverA = computed(() => {
     const l = this.listo();
     if (!l) return ['/mi-unidad'];
+    const propio = l.detalle.acceso === 'propietario';
     const carpeta = l.detalle.ruta.at(-1);
-    if (carpeta) return ['/mi-unidad/carpeta', carpeta._id];
-    return l.detalle.acceso === 'propietario' ? ['/mi-unidad'] : ['/compartidos'];
+    if (carpeta) return [propio ? '/mi-unidad/carpeta' : '/compartidos/carpeta', carpeta._id];
+    return propio ? ['/mi-unidad'] : ['/compartidos'];
   });
 
   protected categoria(valor: string): string {
@@ -154,6 +172,19 @@ export class Visor implements ConCambiosSinGuardar {
       next: (respuesta) => guardarRespuesta(respuesta, l.detalle.nombre),
       error: (error: unknown) => this.notificador.error(error, 'No se pudo descargar el archivo.'),
     });
+  }
+
+  /** Solo el propietario comparte. El diálogo se carga cuando hace falta. */
+  protected async compartir(): Promise<void> {
+    const l = this.listo();
+    if (!l) return;
+    const { DialogoCompartir } = await import('../../compartido/componentes/dialogo-compartir/dialogo-compartir');
+    this.dialogo
+      .open(DialogoCompartir, { data: { tipo: 'archivo', id: l.detalle._id, nombre: l.detalle.nombre }, width: '620px',
+        // Foco en el título: si fuera al buscador, su lista taparía a quienes ya tienen acceso.
+        autoFocus: 'first-heading', maxWidth: '95vw' })
+      .afterClosed()
+      .subscribe(() => this.versionDetalles.update((n) => n + 1));
   }
 
   /** Avisa al cerrar o recargar la pestaña con cambios sin guardar. */

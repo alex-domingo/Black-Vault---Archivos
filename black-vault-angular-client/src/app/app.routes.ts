@@ -37,13 +37,13 @@ export const routes: Routes = [
       {
         path: 'compartidos',
         title: 'Compartidos · Black Vault',
-        loadComponent: enConstruccion,
-        data: {
-          titulo: 'Compartidos',
-          icono: 'folder_shared',
-          fase: 4,
-          descripcion: 'Archivos y carpetas que otros usuarios compartieron contigo y los que tú compartiste.',
-        },
+        loadComponent: () => import('./paginas/compartidos/compartidos').then((m) => m.Compartidos),
+      },
+      {
+        // Carpetas de otras personas: el mismo explorador, bajo la sección "Compartidos".
+        path: 'compartidos/carpeta/:id',
+        title: 'Carpeta compartida · Black Vault',
+        loadComponent: () => import('./paginas/mi-unidad/mi-unidad').then((m) => m.MiUnidad),
       },
       {
         path: 'busqueda',

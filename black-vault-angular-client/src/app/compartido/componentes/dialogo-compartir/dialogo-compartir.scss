@@ -1,0 +1,138 @@
+.aviso {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 16px;
+  font: var(--mat-sys-body-medium);
+  color: var(--mat-sys-on-surface-variant);
+
+  mat-icon {
+    flex-shrink: 0;
+    color: var(--mat-sys-primary);
+  }
+}
+
+.agregar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  padding-top: 4px;
+}
+
+.campo-persona {
+  flex: 1 1 260px;
+}
+
+.campo-permiso {
+  flex: 0 1 150px;
+}
+
+.boton-compartir {
+  height: 48px;
+}
+
+.opcion,
+.persona {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.texto {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+}
+
+.nombre {
+  font: var(--mat-sys-body-large);
+  overflow-wrap: anywhere;
+}
+
+.secundario {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font: var(--mat-sys-body-small);
+  color: var(--mat-sys-on-surface-variant);
+  overflow-wrap: anywhere;
+
+  mat-icon {
+    width: 16px;
+    height: 16px;
+    font-size: 16px;
+  }
+}
+
+.seccion {
+  margin: 24px 0 8px;
+  font: var(--mat-sys-title-small);
+}
+
+.explicacion {
+  margin: -4px 0 8px;
+  font: var(--mat-sys-body-small);
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.personas {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.persona {
+  padding: 8px 0;
+}
+
+.nivel-fijo {
+  padding: 0 12px;
+  font: var(--mat-sys-label-large);
+  color: var(--mat-sys-on-surface-variant);
+  white-space: nowrap;
+}
+
+.nivel {
+  flex-shrink: 0;
+}
+
+.inactivo {
+  margin-left: 6px;
+  padding: 1px 8px;
+  border-radius: var(--mat-sys-corner-full);
+  font: var(--mat-sys-label-small);
+  background: var(--mat-sys-error-container);
+  color: var(--mat-sys-on-error-container);
+}
+
+.vacio {
+  padding: 8px 0;
+  font: var(--mat-sys-body-medium);
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.opcion-permiso {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.3;
+}
+
+.quitar {
+  border-top: 1px solid var(--mat-sys-outline-variant);
+  color: var(--mat-sys-error);
+
+  mat-icon {
+    color: var(--mat-sys-error);
+  }
+}
+
+.mensaje-error {
+  margin: 12px 0 0;
+  padding: 12px;
+  border-radius: var(--mat-sys-corner-medium);
+  background: var(--mat-sys-error-container);
+  color: var(--mat-sys-on-error-container);
+  font: var(--mat-sys-body-medium);
+}

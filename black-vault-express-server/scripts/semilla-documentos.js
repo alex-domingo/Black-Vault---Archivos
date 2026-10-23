@@ -82,6 +82,8 @@ export async function cargarDocumentos(bd, usuarios) {
   const usadoPorUsuario = new Map();
   for (const entrada of ARCHIVOS) {
     const dueno = porNombre.get(entrada.usuario);
+    // Quien lo subió: el dueño o un editor de la carpeta compartida (el archivo sigue siendo del dueño).
+    const autor = porNombre.get(entrada.creadoPor ?? entrada.usuario);
     const carpeta = entrada.ruta ? carpetas.get(`${entrada.usuario}|${entrada.ruta}`) : null;
     const fecha = fechaGt(entrada.fecha);
     const buffer = generarBytes(entrada);
@@ -108,9 +110,9 @@ export async function cargarDocumentos(bd, usuarios) {
       propietarioId: dueno._id,
       carpetaId: carpeta?._id ?? null,
       ancestros: carpeta ? [...carpeta.ancestros, carpeta._id] : [],
-      contenido: { gridFsId, bytes: buffer.length, sha256, version: 1, actualizadoEn: fecha, actualizadoPor: dueno._id },
+      contenido: { gridFsId, bytes: buffer.length, sha256, version: 1, actualizadoEn: fecha, actualizadoPor: autor._id },
       comentarios: [],
-      creadoPor: dueno._id,
+      creadoPor: autor._id,
       creadoEn: fecha,
       actualizadoEn: fecha,
       enPapelera: false,
@@ -122,7 +124,7 @@ export async function cargarDocumentos(bd, usuarios) {
       accion: 'ARCHIVO_SUBIDO',
       categoria: 'archivos',
       fecha,
-      actor: actor(dueno),
+      actor: actor(autor),
       recurso: recurso('archivo', documento),
       detalles: { bytes: buffer.length, carpeta: carpeta ? { _id: carpeta._id, nombre: carpeta.nombre } : null },
       ip: '127.0.0.1',
@@ -135,7 +137,11 @@ export async function cargarDocumentos(bd, usuarios) {
     await bd.collection('usuarios').updateOne({ _id: porNombre.get(nombreUsuario)._id }, { $set: { 'almacenamiento.usadoBytes': bytes } });
   }
 
-  // ---------- Un inicio de sesión antes de la primera acción de cada usuario en cada día ----------
+  return { carpetas: [...carpetas.values()], archivos, actividades };
+}
+
+/** Un inicio de sesión antes de la primera acción de cada usuario en cada día (hora de Guatemala). */
+export function iniciosDeSesion(actividades) {
   const primeraDelDia = new Map();
   for (const a of actividades) {
     const dia = new Date(a.fecha.getTime() - 6 * 3600_000).toISOString().slice(0, 10);
@@ -143,9 +149,11 @@ export async function cargarDocumentos(bd, usuarios) {
     const actual = primeraDelDia.get(clave);
     if (!actual || a.fecha < actual.fecha) primeraDelDia.set(clave, a);
   }
-  for (const a of primeraDelDia.values()) {
-    actividades.push({ accion: 'INICIO_SESION', categoria: 'autenticacion', fecha: new Date(a.fecha.getTime() - 3 * 60_000), actor: a.actor, ip: '127.0.0.1' });
-  }
-
-  return { carpetas: [...carpetas.values()], archivos, actividades };
+  return [...primeraDelDia.values()].map((a) => ({
+    accion: 'INICIO_SESION',
+    categoria: 'autenticacion',
+    fecha: new Date(a.fecha.getTime() - 3 * 60_000),
+    actor: a.actor,
+    ip: '127.0.0.1',
+  }));
 }

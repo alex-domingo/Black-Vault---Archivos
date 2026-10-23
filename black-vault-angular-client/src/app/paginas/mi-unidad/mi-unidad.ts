@@ -119,6 +119,8 @@ export class MiUnidad {
   protected readonly esPropio = computed(() => this.acceso() === 'propietario');
   protected readonly puedeEditar = computed(() => tieneNivel(this.acceso(), 'edicion'));
   protected readonly nombreActual = computed(() => this.datos()?.carpeta?.nombre ?? 'Mi unidad');
+  /** Las carpetas ajenas se navegan bajo "Compartidos" para que el menú lateral marque esa sección. */
+  protected readonly baseCarpeta = computed(() => (this.acceso() === null || this.esPropio() ? '/mi-unidad/carpeta' : '/compartidos/carpeta'));
   protected readonly vacia = computed(() => {
     const d = this.datos();
     return !!d && d.carpetas.length === 0 && d.archivos.length === 0;
@@ -151,7 +153,7 @@ export class MiUnidad {
   }
 
   protected abrir(elemento: Elemento): void {
-    if (elemento.tipo === 'carpeta') void this.router.navigate(['/mi-unidad/carpeta', elemento._id]);
+    if (elemento.tipo === 'carpeta') void this.router.navigate([this.baseCarpeta(), elemento._id]);
     else void this.router.navigate(['/archivo', elemento._id]);
   }
 
@@ -281,6 +283,28 @@ export class MiUnidad {
         this.notificador.exito('Clasificación guardada.');
         this.recargar();
       });
+  }
+
+  /** Compartir un elemento propio (o la carpeta abierta, si no se indica otro). */
+  protected async compartir(elemento: Elemento | null): Promise<void> {
+    const objetivo = elemento ?? this.datos()?.carpeta;
+    if (!objetivo) return;
+    const { DialogoCompartir } = await import('../../compartido/componentes/dialogo-compartir/dialogo-compartir');
+    this.dialogo
+      .open(DialogoCompartir, { data: { tipo: objetivo.tipo, id: objetivo._id, nombre: objetivo.nombre }, width: '620px',
+        // Foco en el título: si fuera al buscador, su lista taparía a quienes ya tienen acceso.
+        autoFocus: 'first-heading', maxWidth: '95vw' })
+      .afterClosed()
+      .subscribe(() => this.recargar());
+  }
+
+  /** Desde el panel de detalles: el elemento seleccionado. */
+  protected compartirSeleccion(): void {
+    const s = this.seleccion();
+    const d = this.datos();
+    if (!s || !d) return;
+    const elemento = [...d.carpetas, ...d.archivos].find((e) => e._id === s.id) ?? (d.carpeta?._id === s.id ? d.carpeta : null);
+    if (elemento) void this.compartir(elemento);
   }
 
   protected descargar(archivo: Archivo): void {

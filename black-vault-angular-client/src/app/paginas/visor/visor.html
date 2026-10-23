@@ -32,6 +32,9 @@
           <div class="acciones">
             @if (!editando()) {
               <button mat-stroked-button (click)="descargar()"><mat-icon>download</mat-icon>Descargar</button>
+              @if (l.detalle.acceso === 'propietario') {
+                <button mat-stroked-button (click)="compartir()"><mat-icon>person_add</mat-icon>Compartir</button>
+              }
               @if (puedeEditar()) {
                 <button mat-flat-button (click)="empezarEdicion()"><mat-icon>edit</mat-icon>Editar</button>
               }
@@ -88,13 +91,18 @@
               <pre class="texto-plano">{{ l.texto.contenido }}</pre>
             }
           </div>
+          <app-comentarios [archivoId]="l.detalle._id" />
         }
       }
     </section>
 
     @if (verDetalles() && listo(); as l) {
       <div class="lateral">
-        <app-panel-detalles [seleccion]="{ tipo: 'archivo', id: l.detalle._id, version: l.detalle.version }" (cerrar)="verDetalles.set(false)" />
+        <app-panel-detalles
+          [seleccion]="{ tipo: 'archivo', id: l.detalle._id, version: l.detalle.version, refresco: versionDetalles() }"
+          (cerrar)="verDetalles.set(false)"
+          (compartir)="compartir()"
+        />
       </div>
     }
   </div>

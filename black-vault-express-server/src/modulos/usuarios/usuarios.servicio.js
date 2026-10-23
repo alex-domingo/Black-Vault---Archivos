@@ -11,7 +11,7 @@ import { registrarActividad } from '../../servicios/historial.js';
 import { errores } from '../../utilidades/errores.js';
 import { aObjectId } from '../../utilidades/ids.js';
 import { aSkipLimit, respuestaPaginada } from '../../utilidades/paginacion.js';
-import { escaparRegex } from '../../utilidades/texto.js';
+import { patronSinTildes } from '../../utilidades/texto.js';
 
 const MB = 1024 * 1024;
 const usuarios = () => coleccion('usuarios');
@@ -53,7 +53,7 @@ export async function listar({ buscar, rol, activo, pagina, limite }) {
   if (rol) filtro.rol = rol;
   if (activo !== undefined) filtro.activo = activo;
   if (buscar) {
-    const patron = new RegExp(escaparRegex(buscar), 'i');
+    const patron = patronSinTildes(buscar);
     filtro.$or = [{ nombreUsuario: patron }, { nombreCompleto: patron }, { correo: patron }];
   }
   const { skip, limit } = aSkipLimit({ pagina, limite });
@@ -212,7 +212,7 @@ export async function restablecerClave(id, claveNueva, actor, ip) {
 export async function directorio(buscar, usuarioActual) {
   const filtro = { activo: true, _id: { $ne: usuarioActual._id } };
   if (buscar) {
-    const patron = new RegExp(escaparRegex(buscar), 'i');
+    const patron = patronSinTildes(buscar);
     filtro.$or = [{ nombreUsuario: patron }, { nombreCompleto: patron }, { correo: patron }];
   }
   return usuarios()

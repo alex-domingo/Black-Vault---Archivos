@@ -268,3 +268,11 @@
     width: 150px;
   }
 }
+
+.marca-compartido {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  font-size: 18px;
+  color: var(--mat-sys-on-surface-variant);
+}
