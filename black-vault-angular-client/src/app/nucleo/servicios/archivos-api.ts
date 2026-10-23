@@ -10,6 +10,7 @@ import {
   ResultadoBusqueda,
   TextoArchivo,
 } from '../modelos/documentos';
+import { Comentario, ComentariosArchivo } from '../modelos/comparticiones';
 import { Paginado } from '../modelos/usuario';
 
 export interface DatosSubida {
@@ -74,5 +75,17 @@ export class ArchivosApi {
 
   mover(id: string, destinoId: string | null): Observable<Archivo> {
     return this.http.patch<Archivo>(`${this.url}/${id}/mover`, { destinoId });
+  }
+
+  comentarios(id: string): Observable<ComentariosArchivo> {
+    return this.http.get<ComentariosArchivo>(`${this.url}/${id}/comentarios`);
+  }
+
+  comentar(id: string, texto: string): Observable<Comentario> {
+    return this.http.post<Comentario>(`${this.url}/${id}/comentarios`, { texto });
+  }
+
+  eliminarComentario(id: string, comentarioId: string): Observable<void> {
+    return this.http.delete<void>(`${this.url}/${id}/comentarios/${comentarioId}`);
   }
 }

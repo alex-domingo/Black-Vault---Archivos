@@ -17,7 +17,7 @@
           }
           @for (paso of d.ruta; track paso._id; let ultimo = $last) {
             <mat-icon class="separador" aria-hidden="true">chevron_right</mat-icon>
-            <a class="miga" [class.actual]="ultimo" [routerLink]="['/mi-unidad/carpeta', paso._id]" [attr.aria-current]="ultimo ? 'page' : null">
+            <a class="miga" [class.actual]="ultimo" [routerLink]="[baseCarpeta(), paso._id]" [attr.aria-current]="ultimo ? 'page' : null">
               {{ paso.nombre }}
             </a>
           }
@@ -48,6 +48,11 @@
         >
           <mat-icon>{{ direccion() === 'asc' ? 'arrow_upward' : 'arrow_downward' }}</mat-icon>
         </button>
+        @if (datos()?.carpeta && esPropio()) {
+          <button mat-icon-button (click)="compartir(null)" matTooltip="Compartir esta carpeta" aria-label="Compartir esta carpeta">
+            <mat-icon>person_add</mat-icon>
+          </button>
+        }
         @if (datos()?.carpeta) {
           <button mat-icon-button (click)="verDetalles(null)" matTooltip="Detalles de esta carpeta" aria-label="Detalles de esta carpeta">
             <mat-icon>info</mat-icon>
@@ -107,6 +112,9 @@
               <button class="nombre" role="cell" (click)="abrir(carpeta)" [attr.aria-label]="'Abrir carpeta ' + carpeta.nombre">
                 <app-icono-archivo tipo="carpeta" />
                 <span class="texto">{{ carpeta.nombre }}</span>
+                @if (carpeta.compartido) {
+                  <mat-icon class="marca-compartido" matTooltip="Compartida" aria-label="Compartida">group</mat-icon>
+                }
               </button>
               <span role="cell" class="col-fecha">{{ carpeta.actualizadoEn | date: 'mediumDate' }}</span>
               <span role="cell" class="col-tamano">—</span>
@@ -120,6 +128,7 @@
                     <button mat-menu-item (click)="renombrar(carpeta)"><mat-icon>edit</mat-icon><span>Cambiar nombre</span></button>
                   }
                   @if (esPropio()) {
+                    <button mat-menu-item (click)="compartir(carpeta)"><mat-icon>person_add</mat-icon><span>Compartir</span></button>
                     <button mat-menu-item (click)="mover(carpeta)"><mat-icon>drive_file_move</mat-icon><span>Mover</span></button>
                   }
                   <button mat-menu-item (click)="verDetalles(carpeta)"><mat-icon>info</mat-icon><span>Detalles</span></button>
@@ -133,6 +142,9 @@
               <button class="nombre" role="cell" (click)="abrir(archivo)" [attr.aria-label]="'Abrir ' + archivo.nombre">
                 <app-icono-archivo tipo="archivo" [extension]="archivo.extension" />
                 <span class="texto">{{ archivo.nombre }}</span>
+                @if (archivo.compartido) {
+                  <mat-icon class="marca-compartido" matTooltip="Compartido" aria-label="Compartido">group</mat-icon>
+                }
                 @if (archivo.etiquetas.length) {
                   <span class="etiquetas" aria-hidden="true">
                     @for (etiqueta of archivo.etiquetas.slice(0, 2); track etiqueta) {
@@ -155,6 +167,7 @@
                     <button mat-menu-item (click)="clasificar(archivo)"><mat-icon>sell</mat-icon><span>Clasificar</span></button>
                   }
                   @if (esPropio()) {
+                    <button mat-menu-item (click)="compartir(archivo)"><mat-icon>person_add</mat-icon><span>Compartir</span></button>
                     <button mat-menu-item (click)="mover(archivo)"><mat-icon>drive_file_move</mat-icon><span>Mover</span></button>
                   }
                   <button mat-menu-item (click)="verDetalles(archivo)"><mat-icon>info</mat-icon><span>Detalles</span></button>
@@ -176,7 +189,7 @@
 
   @if (seleccion(); as s) {
     <div class="lateral">
-      <app-panel-detalles [seleccion]="s" (cerrar)="seleccion.set(null)" />
+      <app-panel-detalles [seleccion]="s" (cerrar)="seleccion.set(null)" (compartir)="compartirSeleccion()" />
     </div>
   }
 </div>

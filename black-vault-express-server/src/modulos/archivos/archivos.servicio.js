@@ -7,9 +7,9 @@ import { EXTENSIONES } from '../../bd/esquema.js';
 import { entorno } from '../../config/entorno.js';
 import { liberarCuota, reservarCuota } from '../../servicios/cuota.js';
 import { calcularSha256, eliminarContenido, flujoDeDescarga, guardarContenido, leerContenido } from '../../servicios/gridfs.js';
-import { registrarActividad } from '../../servicios/historial.js';
+import { registrarActividad, resumenUsuario } from '../../servicios/historial.js';
 import { normalizarNombre, separarExtension, siguienteNombreLibre, validarNombre } from '../../servicios/nombres.js';
-import { construirRuta, exigirNivel, obtenerAcceso } from '../../servicios/permisos.js';
+import { NIVELES, construirRuta, exigirNivel, obtenerAcceso } from '../../servicios/permisos.js';
 import { archivoPublico, recursoParaHistorial, resumenesDeUsuarios } from '../../servicios/presentacion.js';
 import { analizarTexto, pareceBinario, reconstruirBytes } from '../../servicios/texto.js';
 import { errores } from '../../utilidades/errores.js';
@@ -131,9 +131,12 @@ export async function subir(usuario, archivoRecibido, campos, ip) {
 // ---------------------------------------------------------------- consultar
 export async function detalle(usuario, id) {
   const { recurso, nivel, raizVisible } = await obtenerAcceso(usuario, 'archivo', id);
-  const [ruta, usuarios] = await Promise.all([
+  const esPropietario = nivel === 'propietario';
+  const [ruta, usuarios, compartidoCon] = await Promise.all([
     construirRuta('archivo', recurso, raizVisible),
     resumenesDeUsuarios([recurso.propietarioId, recurso.creadoPor, recurso.contenido.actualizadoPor]),
+    // Con cuántas personas está compartido directamente: solo lo sabe el propietario.
+    esPropietario ? coleccion('comparticiones').countDocuments({ recursoId: recurso._id }) : undefined,
   ]);
   const quien = (id) => usuarios.get(id?.toString()) ?? null;
   return {
@@ -143,6 +146,7 @@ export async function detalle(usuario, id) {
     editorContenido: quien(recurso.contenido.actualizadoPor),
     ruta,
     acceso: nivel,
+    ...(esPropietario ? { compartidoCon } : {}),
   };
 }
 
@@ -360,6 +364,84 @@ export async function mover(usuario, id, destinoId, ip) {
     ip,
   });
   return archivoPublico(actualizado);
+}
+
+// ---------------------------------------------------------------- comentarios
+// Embebidos en el archivo, con un tope de 200 (diseño, 4.3 y 5.13).
+const LIMITE_COMENTARIOS = 200;
+const extracto = (texto) => (texto.length > 120 ? `${texto.slice(0, 117)}…` : texto);
+
+/** Comentarios del archivo, del más antiguo al más reciente. Basta con poder verlo. */
+export async function listarComentarios(usuario, id) {
+  const { recurso, nivel } = await obtenerAcceso(usuario, 'archivo', id);
+  const documento = await archivos().findOne({ _id: recurso._id }, { projection: { comentarios: 1 } });
+  const esPropietario = nivel === 'propietario';
+  const comentarios = (documento?.comentarios ?? [])
+    .toSorted((a, b) => a.creadoEn - b.creadoEn)
+    .map((c) => ({ ...c, puedeEliminar: esPropietario || c.autor._id.equals(usuario._id) }));
+  return {
+    comentarios,
+    puedeComentar: NIVELES[nivel] >= NIVELES.comentario,
+    limite: LIMITE_COMENTARIOS,
+  };
+}
+
+export async function agregarComentario(usuario, id, texto, ip) {
+  const acceso = await obtenerAcceso(usuario, 'archivo', id);
+  exigirNivel(acceso, 'comentario', 'comentar este archivo');
+  const archivo = acceso.recurso;
+
+  const comentario = { _id: new ObjectId(), autor: resumenUsuario(usuario), texto, creadoEn: new Date() };
+  // El tope se comprueba en la misma escritura: si ya existe la posición 200, no se agrega.
+  const { matchedCount } = await archivos().updateOne(
+    { _id: archivo._id, enPapelera: false, [`comentarios.${LIMITE_COMENTARIOS - 1}`]: { $exists: false } },
+    { $push: { comentarios: comentario } },
+  );
+  if (matchedCount === 0) {
+    const sigueActivo = await archivos().countDocuments({ _id: archivo._id, enPapelera: false }, { limit: 1 });
+    if (!sigueActivo) throw errores.noEncontrado('El archivo no existe.');
+    throw errores.conflicto(`Este archivo alcanzó el límite de ${LIMITE_COMENTARIOS} comentarios.`);
+  }
+
+  await registrarActividad({
+    accion: 'COMENTARIO_AGREGADO',
+    categoria: 'archivos',
+    actor: usuario,
+    recurso: recursoParaHistorial('archivo', archivo),
+    detalles: { comentarioId: comentario._id, extracto: extracto(texto) },
+    ip,
+  });
+  return { ...comentario, puedeEliminar: true };
+}
+
+/** El autor elimina su comentario; el propietario del archivo puede eliminar cualquiera. */
+export async function eliminarComentario(usuario, id, comentarioId, ip) {
+  const acceso = await obtenerAcceso(usuario, 'archivo', id);
+  const archivo = acceso.recurso;
+  const idComentario = aObjectId(comentarioId, 'El comentario no existe.');
+
+  const documento = await archivos().findOne(
+    { _id: archivo._id, 'comentarios._id': idComentario },
+    { projection: { 'comentarios.$': 1 } },
+  );
+  const comentario = documento?.comentarios?.[0];
+  if (!comentario) throw errores.noEncontrado('El comentario no existe.');
+  if (acceso.nivel !== 'propietario' && !comentario.autor._id.equals(usuario._id)) {
+    throw errores.prohibido('Solo puedes eliminar tus propios comentarios.');
+  }
+
+  const { modifiedCount } = await archivos().updateOne({ _id: archivo._id }, { $pull: { comentarios: { _id: idComentario } } });
+  if (modifiedCount === 0) throw errores.noEncontrado('El comentario no existe.');
+
+  await registrarActividad({
+    accion: 'COMENTARIO_ELIMINADO',
+    categoria: 'archivos',
+    actor: usuario,
+    recurso: recursoParaHistorial('archivo', archivo),
+    usuarioAfectado: comentario.autor._id.equals(usuario._id) ? undefined : comentario.autor,
+    detalles: { comentarioId: idComentario, autor: comentario.autor, extracto: extracto(comentario.texto) },
+    ip,
+  });
 }
 
 // ---------------------------------------------------------------- buscar

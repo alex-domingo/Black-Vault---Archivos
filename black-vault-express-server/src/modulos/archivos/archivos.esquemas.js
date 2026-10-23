@@ -6,6 +6,7 @@ import { esquemaId } from '../../utilidades/ids.js';
 import { esquemaPaginacion } from '../../utilidades/paginacion.js';
 
 export const parametrosId = objeto({ id: esquemaId });
+export const parametrosComentario = objeto({ id: esquemaId, comentarioId: esquemaId });
 
 const categoria = z.enum(CATEGORIAS, { error: 'La categoría debe ser administrativo, informe, contrato u otro.' });
 
@@ -76,4 +77,11 @@ export const cuerpoEditarContenido = objeto({
 
 export const cuerpoMover = objeto({
   destinoId: esquemaId.nullable(),
+});
+
+export const cuerpoComentario = objeto({
+  texto: z
+    .string({ error: 'Escribe el comentario.' })
+    .transform((t) => t.normalize('NFC').trim())
+    .pipe(z.string().min(1, 'Escribe el comentario.').max(1000, 'El comentario admite como máximo 1000 caracteres.')),
 });

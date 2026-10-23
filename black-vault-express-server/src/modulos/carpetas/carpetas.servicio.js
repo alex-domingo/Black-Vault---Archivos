@@ -34,6 +34,17 @@ async function existeNombre(propietarioId, padreId, nombre, excluirId) {
   return (await carpetas().countDocuments(filtro, { limit: 1 })) > 0;
 }
 
+/** Marca con "compartido: true" lo que el propietario compartió directamente con alguien. */
+async function marcarCompartidos(lista) {
+  const elementos = [...lista.carpetas, ...lista.archivos];
+  if (elementos.length === 0) return lista;
+  const compartidos = new Set(
+    (await coleccion('comparticiones').distinct('recursoId', { recursoId: { $in: elementos.map((e) => e._id) } })).map(String),
+  );
+  for (const elemento of elementos) elemento.compartido = compartidos.has(elemento._id.toString());
+  return lista;
+}
+
 /** Subcarpetas y archivos activos de un destino (padreId null = raíz del propietario). */
 async function listarContenido(propietarioId, padreId, { orden, direccion }) {
   const sentido = direccion === 'desc' ? -1 : 1;
@@ -52,17 +63,19 @@ async function listarContenido(propietarioId, padreId, { orden, direccion }) {
 }
 
 export async function contenidoRaiz(usuario, consulta) {
-  const contenido = await listarContenido(usuario._id, null, consulta);
+  const contenido = await marcarCompartidos(await listarContenido(usuario._id, null, consulta));
   return { carpeta: null, ruta: [], acceso: 'propietario', ...contenido };
 }
 
 export async function contenido(usuario, id, consulta) {
   const { recurso, nivel, raizVisible } = await obtenerAcceso(usuario, 'carpeta', id);
-  const [ruta, lista, duenos] = await Promise.all([
+  const [ruta, contenidoCarpeta, duenos] = await Promise.all([
     construirRuta('carpeta', recurso, raizVisible),
     listarContenido(recurso.propietarioId, recurso._id, consulta),
     resumenesDeUsuarios([recurso.propietarioId]),
   ]);
+  // Solo el propietario sabe qué está compartido con otras personas.
+  const lista = nivel === 'propietario' ? await marcarCompartidos(contenidoCarpeta) : contenidoCarpeta;
   return {
     carpeta: { ...carpetaPublica(recurso), propietario: duenos.get(recurso.propietarioId.toString()) ?? null },
     ruta,
@@ -74,11 +87,13 @@ export async function contenido(usuario, id, consulta) {
 /** Detalle de una carpeta: propiedad, ubicación (ruta) y cantidad de elementos. */
 export async function detalle(usuario, id) {
   const { recurso, nivel, raizVisible } = await obtenerAcceso(usuario, 'carpeta', id);
-  const [ruta, duenos, subcarpetas, archivosDirectos] = await Promise.all([
+  const esPropietario = nivel === 'propietario';
+  const [ruta, duenos, subcarpetas, archivosDirectos, compartidoCon] = await Promise.all([
     construirRuta('carpeta', recurso, raizVisible),
     resumenesDeUsuarios([recurso.propietarioId, recurso.creadoPor]),
     carpetas().countDocuments({ padreId: recurso._id, enPapelera: false }),
     archivos().countDocuments({ carpetaId: recurso._id, enPapelera: false }),
+    esPropietario ? coleccion('comparticiones').countDocuments({ recursoId: recurso._id }) : undefined,
   ]);
   return {
     ...carpetaPublica(recurso),
@@ -87,6 +102,7 @@ export async function detalle(usuario, id) {
     ruta,
     acceso: nivel,
     elementos: { carpetas: subcarpetas, archivos: archivosDirectos },
+    ...(esPropietario ? { compartidoCon } : {}),
   };
 }
 

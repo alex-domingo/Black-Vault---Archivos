@@ -56,4 +56,23 @@ rutas.patch('/:id/mover', validar({ parametros: esquemas.parametrosId, cuerpo: e
   res.json(await servicio.mover(req.usuario, req.datos.parametros.id, req.datos.cuerpo.destinoId, req.ip));
 });
 
+// Comentarios: verlos basta con lectura; agregarlos requiere el nivel "comentario".
+rutas.get('/:id/comentarios', validar({ parametros: esquemas.parametrosId }), async (req, res) => {
+  res.json(await servicio.listarComentarios(req.usuario, req.datos.parametros.id));
+});
+
+rutas.post(
+  '/:id/comentarios',
+  validar({ parametros: esquemas.parametrosId, cuerpo: esquemas.cuerpoComentario }),
+  async (req, res) => {
+    res.status(201).json(await servicio.agregarComentario(req.usuario, req.datos.parametros.id, req.datos.cuerpo.texto, req.ip));
+  },
+);
+
+rutas.delete('/:id/comentarios/:comentarioId', validar({ parametros: esquemas.parametrosComentario }), async (req, res) => {
+  const { id, comentarioId } = req.datos.parametros;
+  await servicio.eliminarComentario(req.usuario, id, comentarioId, req.ip);
+  res.status(204).end();
+});
+
 export default rutas;

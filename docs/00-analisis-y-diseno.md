@@ -90,8 +90,8 @@
 |---|---|---|
 | RD-01 | 3 usuarios | 12 (1 administrador, 1 inactivo) |
 | RD-02 | Carpetas y subcarpetas repartidas entre usuarios | 2–4 carpetas raíz por usuario, hasta 3 niveles |
-| RD-03 | 50 archivos de distintos usuarios, carpetas y tipos | 50 activos + 6 en la papelera, `.md` y `.txt` |
-| RD-04 | 20 operaciones de compartición | ~28, con los 3 niveles, archivos y carpetas |
+| RD-03 | 50 archivos de distintos usuarios, carpetas y tipos | 57: 51 activos + 6 en la papelera, `.md` y `.txt` |
+| RD-04 | 20 operaciones de compartición | 34 vigentes (más 2 retiradas y 2 modificadas), con los 3 niveles, archivos y carpetas, y herencia |
 | RD-05 | Recursos en la papelera | archivos sueltos y una carpeta con contenido |
 | RD-06 | Historial suficiente | ~500 eventos repartidos en 6 meses |
 
@@ -504,19 +504,23 @@ Las colecciones, validadores e índices se crean al arrancar el servidor y desde
 6. Historial `ARCHIVO_ELIMINADO_DEFINITIVO` / `CARPETA_ELIMINADA_DEFINITIVO` / `PAPELERA_VACIADA` (archivos, carpetas y bytes liberados).
 
 ### 5.12 Compartir, modificar y retirar
-- **Crear** `POST /api/comparticiones`: solo el propietario; el recurso no está en la papelera; el destinatario existe, está **activo** y no es el propietario; si ya existe para ese recurso y usuario → **409** (se modifica en su lugar). Historial `COMPARTICION_CREADA`.
-- **Modificar** `PATCH /api/comparticiones/:id`: solo el propietario. Historial `COMPARTICION_MODIFICADA` (permiso anterior y nuevo).
-- **Retirar** `DELETE /api/comparticiones/:id`: solo el propietario; se elimina el documento. Historial `COMPARTICION_RETIRADA` (permiso que tenía). El historial conserva la auditoría de quién tuvo acceso y cuándo.
+- **Crear** `POST /api/comparticiones`: solo el propietario (otro nivel → **403**; sin acceso → **404**); el recurso no está en la papelera; el destinatario existe (**404**), está **activo** (**409**) y no es el propietario (**400**); si ya existe para ese recurso y usuario → **409** con `detalles.comparticionId` (se modifica en su lugar). Historial `COMPARTICION_CREADA`.
+- **Modificar** `PATCH /api/comparticiones/:id`: solo el propietario; a cualquier otro se le responde **404** (no se revela que existe). Si el recurso está en la papelera → **409**. Si el permiso no cambia, no se registra nada. Historial `COMPARTICION_MODIFICADA` (permiso anterior y nuevo).
+- **Retirar** `DELETE /api/comparticiones/:id`: solo el propietario; se elimina el documento, también si el recurso está en la papelera (quitar acceso nunca hace daño). Historial `COMPARTICION_RETIRADA` (permiso que tenía y desde cuándo). El historial conserva la auditoría de quién tuvo acceso y cuándo.
+- **Quién tiene acceso** `GET /api/comparticiones/recurso/:tipo/:id`: solo el propietario. Devuelve las comparticiones **directas** (editables) y las **heredadas** de cada carpeta ancestro, con el nombre de la carpeta de la que vienen. El detalle de una carpeta o un archivo incluye `compartidoCon` (cantidad de comparticiones directas) y los listados marcan `compartido: true`, ambos solo para el propietario.
 - **Permiso efectivo**:
   `comparticiones.find({ destinatarioId: u._id, recursoId: { $in: [recurso._id, ...recurso.ancestros] } })` → el nivel máximo (índice 16).
 - **Compartidos conmigo**: aggregation sobre `comparticiones` (`destinatarioId`) con `$lookup` a `archivos` y `carpetas` (excluyendo la papelera) y al propietario. Lo que está dentro de una carpeta compartida se ve al entrar en ella.
+- **Compartidos por mí**: aggregation sobre `comparticiones` (`propietarioId`) que agrupa por recurso (`$group` con `$push` de cada destinatario y su permiso), sin lo que está en la papelera.
+- Ambas aceptan `?tipo=archivo|carpeta&buscar=&pagina=&limite=`.
 - **Búsqueda en lo compartido**: `{ $or: [{ _id: { $in: archivosCompartidos } }, { ancestros: { $in: carpetasCompartidas } }], enPapelera: false }`.
 
 ### 5.13 Comentarios
 - Agregar: `acceso ≥ comentario`, no en la papelera, texto de 1 a 1000 caracteres, con tope atómico:
   `updateOne({ _id, "comentarios.199": { $exists: false } }, { $push: { comentarios: {…} } })` → si no actualiza, **409** (límite alcanzado).
 - Eliminar: el autor del comentario o el propietario del archivo (`$pull`).
-- Los listados excluyen `comentarios` con proyección. Historial `COMENTARIO_AGREGADO` / `COMENTARIO_ELIMINADO`.
+- Ver: `GET /api/archivos/:id/comentarios` con `acceso ≥ lectura`; devuelve los comentarios en orden, `puedeComentar` y, en cada uno, `puedeEliminar`. Quien bajó a lectura conserva el derecho de borrar sus propios comentarios.
+- Los listados excluyen `comentarios` con proyección. Historial `COMENTARIO_AGREGADO` / `COMENTARIO_ELIMINADO` (con un extracto del texto y, al borrar el de otra persona, su autor como `usuarioAfectado`).
 
 ### 5.14 Usuarios y sesión
 - **Inicio de sesión** con nombre de usuario o correo. Usuario inactivo → **403**. JWT de 8 horas con `sub` y `rol`. Se actualiza `ultimoAcceso`. Historial `INICIO_SESION`; los intentos fallidos sobre usuarios existentes quedan como `INICIO_SESION_FALLIDO`.
@@ -579,10 +583,11 @@ Códigos: 400 `VALIDACION` · 401 `NO_AUTENTICADO` · 403 `PROHIBIDO` · 404 `NO
 | | `GET /archivos/:id` · `GET /archivos/:id/contenido` · `GET /archivos/:id/descarga` | lectura+ |
 | | `PUT /archivos/:id/contenido` · `PATCH /archivos/:id` | edición+ |
 | | `PATCH /archivos/:id/mover` · `DELETE /archivos/:id` (a la papelera) | propietario |
+| | `GET /archivos/:id/comentarios` | lectura+ |
 | | `POST /archivos/:id/comentarios` | comentario+ |
 | | `DELETE /archivos/:id/comentarios/:comentarioId` | autor o propietario |
 | Comparticiones | `GET /comparticiones/recurso/:tipo/:id` (directas y heredadas) · `POST /comparticiones` · `PATCH /comparticiones/:id` · `DELETE /comparticiones/:id` | propietario |
-| | `GET /comparticiones/conmigo` · `GET /comparticiones/realizadas` | autenticado |
+| | `GET /comparticiones/conmigo` · `GET /comparticiones/realizadas` (`?tipo=&buscar=&pagina=&limite=`) | autenticado |
 | Papelera | `GET /papelera` · `POST /papelera/:tipo/:id/restaurar` · `DELETE /papelera/:tipo/:id` · `DELETE /papelera` | propietario |
 | Actividad | `GET /actividades?accion=&categoria=&desde=&hasta=&usuarioId=` | autenticado (alcance según rol) |
 | | `GET /actividades/recurso/:tipo/:id` | propietario o administrador |
@@ -695,7 +700,8 @@ src/app/
 
 - Standalone, **zoneless** y signals para todo el estado. Formularios reactivos (los *signal forms* de Angular 21 son experimentales).
 - Rutas con carga diferida para no superar el presupuesto del bundle inicial.
-- `provideHttpClient(withFetch(), withInterceptors([…]))`, `environments` con la URL de la API, `LOCALE_ID` `es-GT` y datepicker en español.
+- `provideHttpClient(withInterceptors([…]))` **sin** `withFetch()`: el backend XHR es el que informa el progreso de las subidas. `environments` con la URL de la API, `LOCALE_ID` `es-GT` y datepicker en español.
+- Las carpetas ajenas se abren en `/compartidos/carpeta/:id` (el mismo explorador que `/mi-unidad/carpeta/:id`), para que el menú lateral marque la sección correcta y la ruta empiece en "Compartidos".
 - Las descargas usan `HttpClient` con `responseType: 'blob'` (el token va en la cabecera, así que un `<a href>` simple no sirve).
 - Markdown con `marked` y la sanitización de `[innerHTML]` de Angular.
 
@@ -706,10 +712,10 @@ src/app/
 - Borra y recrea la base `black_vault` (pide confirmación salvo con `--forzar`), crea validadores e índices y termina ejecutando la verificación de integridad.
 - **12 usuarios**: 1 administrador y 11 usuarios de distintas áreas (legal, finanzas, recursos humanos, operaciones…), 1 de ellos inactivo con archivos e historial (demuestra RN-09). Distribución desigual de archivos para que el Top 10 se note.
 - **Carpetas**: 2–4 raíces por usuario, hasta 3 niveles (por ejemplo `Contratos/2026/Clientes`).
-- **56 archivos** en GridFS: 50 activos y 6 en la papelera, mezcla de `.md` y `.txt`, las cuatro categorías, con etiquetas. Contenido realista en español (contratos, actas, informes, políticas). Incluye nombres con tildes y ñ, un archivo con saltos CRLF y uno con BOM.
-- **~28 comparticiones** de archivos y carpetas con los 3 niveles, incluido un caso de herencia; en el historial también hay modificaciones y retiros.
+- **57 archivos** en GridFS: 51 activos y 6 en la papelera (la papelera se carga en la fase 7), mezcla de `.md` y `.txt`, las cuatro categorías, con etiquetas. Contenido realista en español (contratos, actas, informes, políticas). Incluye nombres con tildes y ñ, un archivo con saltos CRLF y uno con BOM.
+- **34 comparticiones vigentes** de archivos y carpetas con los 3 niveles: herencia (una carpeta y una subcarpeta compartidas con personas distintas), un archivo compartido con 6 personas, lo que compartió una usuaria hoy inactiva, y un archivo que un editor subió a una carpeta ajena (queda a nombre del dueño). El historial incluye 2 cambios de permiso y 2 retiros.
+- **20 comentarios** en archivos compartidos. La carga verifica que cada comentario y cada archivo subido por otra persona tuvieran, en su fecha, el permiso necesario.
 - **Papelera**: archivos sueltos, una carpeta con subcarpeta y archivos (cascada) y un archivo eliminado por separado dentro de una carpeta activa.
-- **Comentarios** en archivos compartidos.
 - **~500 actividades** coherentes con todo lo anterior y repartidas de mayo a octubre de 2026.
 - El espacio usado de cada usuario se calcula a partir de sus archivos.
 

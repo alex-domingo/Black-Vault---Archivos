@@ -18,6 +18,8 @@ export interface SeleccionDetalle {
   id: string;
   /** Cambia cuando el elemento se modifica, para volver a pedir el detalle. */
   version?: number;
+  /** Cambia cuando algo externo al elemento cambió (por ejemplo, con quién está compartido). */
+  refresco?: number;
 }
 
 type Estado =
@@ -40,6 +42,8 @@ export class PanelDetalles {
 
   readonly seleccion = input.required<SeleccionDetalle>();
   readonly cerrar = output<void>();
+  /** El propietario pidió gestionar el acceso. */
+  readonly compartir = output<void>();
 
   protected readonly nombresNivel = NOMBRE_NIVEL;
 
