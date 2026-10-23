@@ -1,0 +1,101 @@
+@let e = estado();
+@if (e.tipo === 'error') {
+  <div class="error-carga" role="alert">
+    <mat-icon aria-hidden="true">error</mat-icon>
+    <p>{{ e.mensaje }}</p>
+    <a mat-stroked-button routerLink="/mi-unidad">Ir a Mi unidad</a>
+  </div>
+} @else {
+  <div class="visor" [class.con-panel]="verDetalles()">
+    <section class="documento">
+      @if (e.tipo === 'cargando') {
+        <mat-progress-bar mode="indeterminate" aria-label="Cargando documento" />
+      }
+
+      @if (listo(); as l) {
+        <header class="cabecera">
+          <a mat-icon-button [routerLink]="volverA()" aria-label="Volver a la carpeta" matTooltip="Volver">
+            <mat-icon>arrow_back</mat-icon>
+          </a>
+          <app-icono-archivo tipo="archivo" [extension]="l.detalle.extension" />
+          <div class="titulo">
+            <h1>{{ l.detalle.nombre }}</h1>
+            <p class="meta">
+              {{ l.detalle.extension === 'md' ? 'Markdown' : 'Texto' }} · {{ l.detalle.bytes | bytes }} ·
+              {{ categoria(l.detalle.categoria) }} · versión {{ l.detalle.version }} ·
+              modificado {{ l.detalle.contenidoActualizadoEn | date: 'medium' }}
+              @if (l.detalle.acceso !== 'propietario') {
+                · de {{ l.detalle.propietario?.nombreCompleto }} ({{ nombresNivel[l.detalle.acceso] }})
+              }
+            </p>
+          </div>
+          <div class="acciones">
+            @if (!editando()) {
+              <button mat-stroked-button (click)="descargar()"><mat-icon>download</mat-icon>Descargar</button>
+              @if (puedeEditar()) {
+                <button mat-flat-button (click)="empezarEdicion()"><mat-icon>edit</mat-icon>Editar</button>
+              }
+            } @else {
+              <button mat-button (click)="cancelarEdicion()" [disabled]="guardando()">Cancelar</button>
+              <button mat-flat-button (click)="guardar()" [disabled]="guardando() || !hayCambios()">
+                <mat-icon>save</mat-icon>{{ guardando() ? 'Guardando…' : 'Guardar' }}
+              </button>
+            }
+            <button mat-icon-button (click)="verDetalles.set(!verDetalles())" matTooltip="Detalles" aria-label="Mostrar u ocultar detalles">
+              <mat-icon>info</mat-icon>
+            </button>
+          </div>
+        </header>
+
+        @if (!l.texto.esUtf8) {
+          <p class="aviso" role="status">
+            <mat-icon aria-hidden="true">warning</mat-icon>
+            Este archivo no está en UTF-8: la vista previa puede mostrar caracteres extraños y no se puede editar aquí
+            para no dañar su contenido. La descarga conserva los bytes originales.
+          </p>
+        }
+
+        @if (errorGuardar(); as texto) {
+          <p class="aviso error" role="alert">
+            <mat-icon aria-hidden="true">error</mat-icon>
+            <span>{{ texto }}</span>
+            @if (conflicto()) {
+              <button mat-button (click)="recargarUltimaVersion()">Cargar la versión más reciente</button>
+            }
+          </p>
+        }
+
+        @if (editando()) {
+          <div class="edicion" [class.dividida]="l.detalle.extension === 'md'">
+            <textarea
+              class="editor"
+              [value]="borrador()"
+              (input)="alEscribir($event)"
+              spellcheck="true"
+              aria-label="Contenido del documento"
+            ></textarea>
+            @if (l.detalle.extension === 'md') {
+              <div class="previa" aria-label="Vista previa">
+                <app-vista-markdown [texto]="borrador()" />
+              </div>
+            }
+          </div>
+        } @else {
+          <div class="contenido">
+            @if (l.detalle.extension === 'md') {
+              <app-vista-markdown [texto]="l.texto.contenido" />
+            } @else {
+              <pre class="texto-plano">{{ l.texto.contenido }}</pre>
+            }
+          </div>
+        }
+      }
+    </section>
+
+    @if (verDetalles() && listo(); as l) {
+      <div class="lateral">
+        <app-panel-detalles [seleccion]="{ tipo: 'archivo', id: l.detalle._id, version: l.detalle.version }" (cerrar)="verDetalles.set(false)" />
+      </div>
+    }
+  </div>
+}

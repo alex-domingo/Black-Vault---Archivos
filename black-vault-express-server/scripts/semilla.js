@@ -5,14 +5,15 @@
 // Uso:  npm run semilla              (pide confirmación)
 //       npm run semilla -- --forzar  (sin confirmación)
 //
-// Fase 2: usuarios y su historial de alta. Las fases siguientes agregan carpetas,
-// archivos en GridFS, comparticiones, papelera y el resto del historial.
+// Contenido actual: usuarios, carpetas, archivos en GridFS y su historial.
+// Las fases siguientes agregan comparticiones, papelera y el resto del historial.
 import { createInterface } from 'node:readline/promises';
 import { entorno, uriSinCredenciales } from '../src/config/entorno.js';
 import { conectar, desconectar } from '../src/bd/conexion.js';
 import { prepararEsquema } from '../src/bd/esquema.js';
 import { generarHash } from '../src/servicios/claves.js';
 import { CLAVE_ADMINISTRADOR, CLAVE_USUARIOS, USUARIOS_SEMILLA } from './datos-semilla/usuarios.js';
+import { cargarDocumentos } from './semilla-documentos.js';
 
 const MB = 1024 * 1024;
 
@@ -98,10 +99,22 @@ async function ejecutar() {
   await prepararEsquema(bd);
 
   const usuarios = await cargarUsuarios(bd);
-  const actividades = historialDeUsuarios(usuarios);
+  const documentos = await cargarDocumentos(bd, usuarios);
+  const actividades = [...historialDeUsuarios(usuarios), ...documentos.actividades].sort((a, b) => a.fecha - b.fecha);
   await bd.collection('actividades').insertMany(actividades);
 
-  console.log(`\n✔ ${usuarios.length} usuarios · ${actividades.length} actividades\n`);
+  // Último acceso de cada usuario = su último inicio de sesión registrado.
+  const ultimos = new Map();
+  for (const a of actividades) if (a.accion === 'INICIO_SESION') ultimos.set(a.actor._id.toString(), a.fecha);
+  for (const u of usuarios) {
+    const ultimo = ultimos.get(u._id.toString());
+    if (ultimo) await bd.collection('usuarios').updateOne({ _id: u._id }, { $set: { ultimoAcceso: ultimo } });
+  }
+
+  const bytes = documentos.archivos.reduce((s, a) => s + a.contenido.bytes, 0);
+  console.log(
+    `\n✔ ${usuarios.length} usuarios · ${documentos.carpetas.length} carpetas · ${documentos.archivos.length} archivos en GridFS (${(bytes / 1024).toFixed(1)} KB) · ${actividades.length} actividades\n`,
+  );
   console.table(
     usuarios.map((u) => ({
       usuario: u.nombreUsuario,

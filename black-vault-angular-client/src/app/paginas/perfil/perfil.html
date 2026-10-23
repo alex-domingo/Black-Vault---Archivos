@@ -26,10 +26,20 @@
 
     <section class="tarjeta" aria-labelledby="titulo-espacio">
       <h2 id="titulo-espacio"><mat-icon aria-hidden="true">cloud</mat-icon>Almacenamiento</h2>
-      <p class="uso">
-        <strong>{{ u.almacenamiento.usadoBytes | bytes }}</strong> de {{ u.almacenamiento.cuotaBytes | bytes }}
-      </p>
+      @if (espacio(); as e) {
+        <p class="uso">
+          <strong>{{ e.usadoBytes | bytes }}</strong> de {{ e.cuotaBytes | bytes }}
+        </p>
+      }
       <mat-progress-bar mode="determinate" [value]="porcentajeUso()" [attr.aria-label]="'Espacio usado: ' + porcentajeUso().toFixed(0) + '%'" />
+      @if (almacenamiento.estado(); as estado) {
+        <ul class="desglose">
+          @for (tipo of estado.porTipo; track tipo.extension) {
+            <li>{{ tipo.extension === 'md' ? 'Markdown' : 'Texto' }}: {{ tipo.archivos }} archivo(s), {{ tipo.bytes | bytes }}</li>
+          }
+          <li>En la papelera: {{ estado.enPapelera.archivos }} archivo(s), {{ estado.enPapelera.bytes | bytes }}</li>
+        </ul>
+      }
       <p class="nota">Incluye lo que está en la papelera hasta que se elimine definitivamente.</p>
     </section>
 

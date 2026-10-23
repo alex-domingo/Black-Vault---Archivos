@@ -1,7 +1,7 @@
 {
   "name": "black-vault-express-server",
   "version": "0.2.0",
-  "description": "Servidor de Black Vault: API REST de gesti\u00f3n documental con Express y MongoDB (GridFS).",
+  "description": "Servidor de Black Vault: API REST de gestión documental con Express y MongoDB (GridFS).",
   "private": true,
   "type": "module",
   "main": "src/servidor.js",
@@ -23,6 +23,7 @@
     "jsonwebtoken": "^9.0.3",
     "mongodb": "^7.7.0",
     "morgan": "^1.12.1",
+    "multer": "^2.4.0",
     "zod": "^4.6.7"
   },
   "devDependencies": {

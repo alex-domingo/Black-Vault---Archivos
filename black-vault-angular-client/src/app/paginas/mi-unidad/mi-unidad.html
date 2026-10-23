@@ -1,0 +1,182 @@
+<div class="explorador" [class.con-panel]="seleccion()">
+  <section
+    class="principal"
+    [class.arrastrando]="arrastrando()"
+    (dragover)="alArrastrar($event, true)"
+    (dragleave)="arrastrando.set(false)"
+    (drop)="alSoltar($event)"
+  >
+    <header class="barra">
+      <h1 class="solo-lectores">{{ datos()?.carpeta?.nombre ?? 'Mi unidad' }}</h1>
+      <nav class="ruta" aria-label="Ubicación">
+        @if (datos(); as d) {
+          @if (d.acceso === 'propietario') {
+            <a routerLink="/mi-unidad" class="miga" [class.actual]="!d.carpeta">Mi unidad</a>
+          } @else {
+            <a routerLink="/compartidos" class="miga">Compartidos</a>
+          }
+          @for (paso of d.ruta; track paso._id; let ultimo = $last) {
+            <mat-icon class="separador" aria-hidden="true">chevron_right</mat-icon>
+            <a class="miga" [class.actual]="ultimo" [routerLink]="['/mi-unidad/carpeta', paso._id]" [attr.aria-current]="ultimo ? 'page' : null">
+              {{ paso.nombre }}
+            </a>
+          }
+        } @else {
+          <span class="miga actual">Mi unidad</span>
+        }
+      </nav>
+
+      <div class="acciones">
+        @if (acceso() && !esPropio()) {
+          <span class="acceso" matTooltip="Tu permiso en esta carpeta">
+            <mat-icon aria-hidden="true">group</mat-icon>{{ nombresNivel[acceso()!] }}
+          </span>
+        }
+        <mat-form-field class="orden" subscriptSizing="dynamic">
+          <mat-label>Ordenar por</mat-label>
+          <mat-select [value]="orden()" (valueChange)="cambiarOrden($event)">
+            @for (opcion of opcionesOrden; track opcion.valor) {
+              <mat-option [value]="opcion.valor">{{ opcion.etiqueta }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+        <button
+          mat-icon-button
+          (click)="alternarDireccion()"
+          [matTooltip]="direccion() === 'asc' ? 'Ascendente' : 'Descendente'"
+          [attr.aria-label]="direccion() === 'asc' ? 'Orden ascendente; cambiar a descendente' : 'Orden descendente; cambiar a ascendente'"
+        >
+          <mat-icon>{{ direccion() === 'asc' ? 'arrow_upward' : 'arrow_downward' }}</mat-icon>
+        </button>
+        @if (datos()?.carpeta) {
+          <button mat-icon-button (click)="verDetalles(null)" matTooltip="Detalles de esta carpeta" aria-label="Detalles de esta carpeta">
+            <mat-icon>info</mat-icon>
+          </button>
+        }
+        @if (puedeEditar()) {
+          <button mat-flat-button [matMenuTriggerFor]="menuNuevo">
+            <mat-icon>add</mat-icon>
+            Nuevo
+          </button>
+          <mat-menu #menuNuevo="matMenu" xPosition="before">
+            <button mat-menu-item (click)="nuevaCarpeta()">
+              <mat-icon>create_new_folder</mat-icon>
+              <span>Carpeta</span>
+            </button>
+            <button mat-menu-item (click)="elegirArchivos()">
+              <mat-icon>upload_file</mat-icon>
+              <span>Subir archivos (.txt, .md)</span>
+            </button>
+          </mat-menu>
+        }
+        <input #selectorArchivos type="file" accept=".txt,.md,text/plain,text/markdown" multiple hidden (change)="alElegirArchivos($event)" />
+      </div>
+    </header>
+
+    @if (estado().tipo === 'cargando') {
+      <mat-progress-bar mode="indeterminate" class="carga" aria-label="Cargando" />
+    }
+
+    @let e = estado();
+    @if (e.tipo === 'error') {
+      <div class="vacio" role="alert">
+        <mat-icon aria-hidden="true">folder_off</mat-icon>
+        <p>{{ e.mensaje }}</p>
+        <a mat-stroked-button routerLink="/mi-unidad">Ir a Mi unidad</a>
+      </div>
+    } @else if (datos(); as d) {
+      @if (vacia()) {
+        <div class="vacio">
+          <mat-icon aria-hidden="true">{{ puedeEditar() ? 'upload_file' : 'folder_open' }}</mat-icon>
+          <p>Esta carpeta está vacía.</p>
+          @if (puedeEditar()) {
+            <p class="pista">Arrastra archivos .txt o .md aquí, o usa el botón <strong>Nuevo</strong>.</p>
+          }
+        </div>
+      } @else {
+        <div class="lista" role="table" aria-label="Contenido de la carpeta">
+          <div class="fila encabezado" role="row">
+            <span role="columnheader">Nombre</span>
+            <span role="columnheader" class="col-fecha">Modificado</span>
+            <span role="columnheader" class="col-tamano">Tamaño</span>
+            <span role="columnheader"><span class="oculto">Acciones</span></span>
+          </div>
+
+          @for (carpeta of d.carpetas; track carpeta._id) {
+            <div class="fila" role="row" [class.elegida]="seleccion()?.id === carpeta._id">
+              <button class="nombre" role="cell" (click)="abrir(carpeta)" [attr.aria-label]="'Abrir carpeta ' + carpeta.nombre">
+                <app-icono-archivo tipo="carpeta" />
+                <span class="texto">{{ carpeta.nombre }}</span>
+              </button>
+              <span role="cell" class="col-fecha">{{ carpeta.actualizadoEn | date: 'mediumDate' }}</span>
+              <span role="cell" class="col-tamano">—</span>
+              <span role="cell" class="menu">
+                <button mat-icon-button [matMenuTriggerFor]="menuCarpeta" [attr.aria-label]="'Acciones para ' + carpeta.nombre">
+                  <mat-icon>more_vert</mat-icon>
+                </button>
+                <mat-menu #menuCarpeta="matMenu" xPosition="before">
+                  <button mat-menu-item (click)="abrir(carpeta)"><mat-icon>folder_open</mat-icon><span>Abrir</span></button>
+                  @if (puedeEditar()) {
+                    <button mat-menu-item (click)="renombrar(carpeta)"><mat-icon>edit</mat-icon><span>Cambiar nombre</span></button>
+                  }
+                  @if (esPropio()) {
+                    <button mat-menu-item (click)="mover(carpeta)"><mat-icon>drive_file_move</mat-icon><span>Mover</span></button>
+                  }
+                  <button mat-menu-item (click)="verDetalles(carpeta)"><mat-icon>info</mat-icon><span>Detalles</span></button>
+                </mat-menu>
+              </span>
+            </div>
+          }
+
+          @for (archivo of d.archivos; track archivo._id) {
+            <div class="fila" role="row" [class.elegida]="seleccion()?.id === archivo._id">
+              <button class="nombre" role="cell" (click)="abrir(archivo)" [attr.aria-label]="'Abrir ' + archivo.nombre">
+                <app-icono-archivo tipo="archivo" [extension]="archivo.extension" />
+                <span class="texto">{{ archivo.nombre }}</span>
+                @if (archivo.etiquetas.length) {
+                  <span class="etiquetas" aria-hidden="true">
+                    @for (etiqueta of archivo.etiquetas.slice(0, 2); track etiqueta) {
+                      <span class="etiqueta">{{ etiqueta }}</span>
+                    }
+                  </span>
+                }
+              </button>
+              <span role="cell" class="col-fecha">{{ archivo.actualizadoEn | date: 'mediumDate' }}</span>
+              <span role="cell" class="col-tamano">{{ archivo.bytes | bytes }}</span>
+              <span role="cell" class="menu">
+                <button mat-icon-button [matMenuTriggerFor]="menuArchivo" [attr.aria-label]="'Acciones para ' + archivo.nombre">
+                  <mat-icon>more_vert</mat-icon>
+                </button>
+                <mat-menu #menuArchivo="matMenu" xPosition="before">
+                  <button mat-menu-item (click)="abrir(archivo)"><mat-icon>visibility</mat-icon><span>Abrir</span></button>
+                  <button mat-menu-item (click)="descargar(archivo)"><mat-icon>download</mat-icon><span>Descargar</span></button>
+                  @if (puedeEditar()) {
+                    <button mat-menu-item (click)="renombrar(archivo)"><mat-icon>edit</mat-icon><span>Cambiar nombre</span></button>
+                    <button mat-menu-item (click)="clasificar(archivo)"><mat-icon>sell</mat-icon><span>Clasificar</span></button>
+                  }
+                  @if (esPropio()) {
+                    <button mat-menu-item (click)="mover(archivo)"><mat-icon>drive_file_move</mat-icon><span>Mover</span></button>
+                  }
+                  <button mat-menu-item (click)="verDetalles(archivo)"><mat-icon>info</mat-icon><span>Detalles</span></button>
+                </mat-menu>
+              </span>
+            </div>
+          }
+        </div>
+      }
+    }
+
+    @if (arrastrando()) {
+      <div class="soltar" aria-hidden="true">
+        <mat-icon>upload</mat-icon>
+        <p>Suelta los archivos para subirlos a <strong>{{ nombreActual() }}</strong></p>
+      </div>
+    }
+  </section>
+
+  @if (seleccion(); as s) {
+    <div class="lateral">
+      <app-panel-detalles [seleccion]="s" (cerrar)="seleccion.set(null)" />
+    </div>
+  }
+</div>

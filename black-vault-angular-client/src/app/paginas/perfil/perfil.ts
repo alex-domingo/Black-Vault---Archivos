@@ -10,6 +10,7 @@ import { Avatar } from '../../compartido/componentes/avatar/avatar';
 import { BytesPipe } from '../../compartido/pipes/bytes.pipe';
 import { camposIguales, claveSegura, mensajeClave } from '../../compartido/validadores';
 import { ErrorApi } from '../../nucleo/modelos/error-api';
+import { Almacenamiento } from '../../nucleo/servicios/almacenamiento';
 import { AutenticacionApi } from '../../nucleo/servicios/autenticacion-api';
 import { Notificador } from '../../nucleo/servicios/notificador';
 import { Sesion } from '../../nucleo/servicios/sesion';
@@ -37,11 +38,18 @@ export class Perfil {
   private readonly notificador = inject(Notificador);
 
   protected readonly usuario = this.sesion.usuario;
+  protected readonly almacenamiento = inject(Almacenamiento);
+  /** Espacio al día (se refresca al subir o editar); mientras carga, el del perfil. */
+  protected readonly espacio = computed(() => this.almacenamiento.estado() ?? this.usuario()?.almacenamiento ?? null);
   protected readonly porcentajeUso = computed(() => {
-    const almacenamiento = this.usuario()?.almacenamiento;
-    if (!almacenamiento || almacenamiento.cuotaBytes === 0) return 0;
-    return Math.min(100, (almacenamiento.usadoBytes / almacenamiento.cuotaBytes) * 100);
+    const espacio = this.espacio();
+    if (!espacio || espacio.cuotaBytes === 0) return 0;
+    return Math.min(100, (espacio.usadoBytes / espacio.cuotaBytes) * 100);
   });
+
+  constructor() {
+    this.almacenamiento.refrescar();
+  }
 
   protected readonly formularioClave = inject(NonNullableFormBuilder).group(
     {

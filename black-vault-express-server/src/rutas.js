@@ -3,13 +3,18 @@ import { Router } from 'express';
 import rutasSalud from './modulos/salud/salud.rutas.js';
 import rutasAutenticacion from './modulos/autenticacion/autenticacion.rutas.js';
 import rutasUsuarios from './modulos/usuarios/usuarios.rutas.js';
+import rutasCarpetas from './modulos/carpetas/carpetas.rutas.js';
+import rutasArchivos from './modulos/archivos/archivos.rutas.js';
+import rutasAlmacenamiento from './modulos/almacenamiento/almacenamiento.rutas.js';
 
 const api = Router();
 
 api.use('/salud', rutasSalud);
 api.use('/autenticacion', rutasAutenticacion);
 api.use('/usuarios', rutasUsuarios);
-// Fases siguientes: carpetas, archivos, comparticiones, papelera, actividades,
-// almacenamiento, reportes y mantenimiento.
+api.use('/carpetas', rutasCarpetas);
+api.use('/archivos', rutasArchivos);
+api.use('/almacenamiento', rutasAlmacenamiento);
+// Fases siguientes: comparticiones, papelera, actividades, reportes y mantenimiento.
 
 export default api;

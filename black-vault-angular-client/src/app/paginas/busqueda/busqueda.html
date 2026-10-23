@@ -1,0 +1,148 @@
+<header class="cabecera-pagina">
+  <h1>Búsqueda</h1>
+  <p>Encuentra archivos propios y compartidos contigo. Lo que está en la papelera no aparece.</p>
+</header>
+
+<form class="filtros" [formGroup]="filtros" novalidate (ngSubmit)="$event.preventDefault()">
+  <mat-form-field class="buscar" subscriptSizing="dynamic">
+    <mat-label>{{ filtros.controls.modo.value === 'nombre' ? 'Nombre o etiqueta contiene…' : 'Palabras en nombre, etiquetas o descripción' }}</mat-label>
+    <mat-icon matPrefix aria-hidden="true">search</mat-icon>
+    <input matInput formControlName="buscar" autocomplete="off" />
+    @if (filtros.controls.buscar.value) {
+      <button mat-icon-button matSuffix type="button" (click)="filtros.controls.buscar.setValue('')" aria-label="Limpiar búsqueda">
+        <mat-icon>close</mat-icon>
+      </button>
+    }
+  </mat-form-field>
+
+  <mat-form-field subscriptSizing="dynamic">
+    <mat-label>Modo</mat-label>
+    <mat-select formControlName="modo">
+      <mat-option value="nombre">Por nombre (parcial)</mat-option>
+      <mat-option value="palabras">Por palabras (relevancia)</mat-option>
+    </mat-select>
+  </mat-form-field>
+
+  <mat-form-field subscriptSizing="dynamic">
+    <mat-label>Alcance</mat-label>
+    <mat-select formControlName="alcance">
+      <mat-option value="todos">Todo</mat-option>
+      <mat-option value="propios">Mis archivos</mat-option>
+      <mat-option value="compartidos">Compartidos conmigo</mat-option>
+    </mat-select>
+  </mat-form-field>
+
+  <mat-form-field subscriptSizing="dynamic">
+    <mat-label>Tipo</mat-label>
+    <mat-select formControlName="tipo">
+      <mat-option value="">Todos</mat-option>
+      <mat-option value="md">Markdown (.md)</mat-option>
+      <mat-option value="txt">Texto (.txt)</mat-option>
+    </mat-select>
+  </mat-form-field>
+
+  <mat-form-field subscriptSizing="dynamic">
+    <mat-label>Categoría</mat-label>
+    <mat-select formControlName="categoria">
+      <mat-option value="">Todas</mat-option>
+      @for (c of categorias; track c.valor) {
+        <mat-option [value]="c.valor">{{ c.etiqueta }}</mat-option>
+      }
+    </mat-select>
+  </mat-form-field>
+
+  <mat-form-field subscriptSizing="dynamic">
+    <mat-label>Etiqueta exacta</mat-label>
+    <input matInput formControlName="etiqueta" autocomplete="off" />
+  </mat-form-field>
+
+  <mat-form-field class="fechas" subscriptSizing="dynamic">
+    <mat-label>Cargado entre</mat-label>
+    <mat-date-range-input [rangePicker]="rango">
+      <input matStartDate formControlName="desde" placeholder="Desde" />
+      <input matEndDate formControlName="hasta" placeholder="Hasta" />
+    </mat-date-range-input>
+    <mat-datepicker-toggle matIconSuffix [for]="rango" />
+    <mat-date-range-picker #rango />
+  </mat-form-field>
+
+  <mat-form-field subscriptSizing="dynamic">
+    <mat-label>Ordenar por</mat-label>
+    <mat-select formControlName="orden">
+      <mat-option value="fecha">Fecha de modificación</mat-option>
+      <mat-option value="nombre">Nombre</mat-option>
+      <mat-option value="tamano">Tamaño</mat-option>
+      <mat-option value="tipo">Tipo</mat-option>
+      @if (filtros.controls.modo.value === 'palabras') {
+        <mat-option value="relevancia">Relevancia</mat-option>
+      }
+    </mat-select>
+  </mat-form-field>
+
+  <mat-form-field subscriptSizing="dynamic">
+    <mat-label>Dirección</mat-label>
+    <mat-select formControlName="direccion">
+      <mat-option value="desc">Descendente</mat-option>
+      <mat-option value="asc">Ascendente</mat-option>
+    </mat-select>
+  </mat-form-field>
+
+  @if (hayFiltros()) {
+    <button mat-button type="button" (click)="limpiar()"><mat-icon>filter_alt_off</mat-icon>Quitar filtros</button>
+  }
+</form>
+
+<div class="resultados">
+  @if (cargando()) {
+    <mat-progress-bar mode="indeterminate" class="carga" aria-label="Buscando" />
+  }
+
+  @if (error(); as texto) {
+    <p class="vacio error" role="alert">{{ texto }}</p>
+  } @else {
+    <p class="conteo" role="status">{{ total() }} resultado(s)</p>
+    <div class="lista" role="table" aria-label="Resultados">
+      <div class="fila encabezado" role="row">
+        <span role="columnheader">Nombre</span>
+        <span role="columnheader" class="col-ubicacion">Ubicación</span>
+        <span role="columnheader" class="col-propietario">Propietario</span>
+        <span role="columnheader" class="col-fecha">Modificado</span>
+        <span role="columnheader" class="col-tamano">Tamaño</span>
+      </div>
+      @for (r of resultados(); track r._id) {
+        <a class="fila" role="row" [routerLink]="['/archivo', r._id]">
+          <span class="nombre" role="cell">
+            <app-icono-archivo tipo="archivo" [extension]="r.extension" />
+            <span class="texto">
+              <span class="titulo">{{ r.nombre }}</span>
+              <span class="detalle">
+                {{ categoria(r.categoria) }}
+                @for (etiqueta of r.etiquetas.slice(0, 3); track etiqueta) {
+                  · <span class="etiqueta">{{ etiqueta }}</span>
+                }
+              </span>
+            </span>
+          </span>
+          <span role="cell" class="col-ubicacion">
+            <mat-icon aria-hidden="true">folder</mat-icon>{{ r.carpeta?.nombre ?? (r.esPropio ? 'Mi unidad' : '—') }}
+          </span>
+          <span role="cell" class="col-propietario">{{ r.esPropio ? 'Yo' : r.propietario?.nombreCompleto }}</span>
+          <span role="cell" class="col-fecha">{{ r.actualizadoEn | date: 'mediumDate' }}</span>
+          <span role="cell" class="col-tamano">{{ r.bytes | bytes }}</span>
+        </a>
+      } @empty {
+        @if (!cargando()) {
+          <p class="vacio">No hay archivos que coincidan con la búsqueda.</p>
+        }
+      }
+    </div>
+    <mat-paginator
+      [length]="total()"
+      [pageIndex]="pagina()"
+      [pageSize]="limite()"
+      [pageSizeOptions]="[10, 20, 50]"
+      (page)="cambiarPagina($event)"
+      aria-label="Páginas de resultados"
+    />
+  }
+</div>
