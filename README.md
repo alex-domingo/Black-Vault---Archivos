@@ -1,40 +1,39 @@
 # Black Vault
 
-Sistema de gestión documental: almacenar, organizar, consultar y compartir archivos `.txt` y `.md` entre usuarios, con arquitectura cliente-servidor y MongoDB.
+Sistema de gestión documental para guardar, organizar y compartir archivos `.txt` y `.md` entre usuarios.
 
-| Parte | Carpeta | Tecnología |
-|---|---|---|
-| Cliente | `black-vault-angular-client/` | Angular 21 LTS + Angular Material |
-| Servidor (API REST) | `black-vault-express-server/` | Node.js 24 + Express 5 + driver oficial de MongoDB |
-| Base de datos | — | MongoDB 9.0 (contenido de archivos en GridFS) |
-| Documentación | `docs/` | Análisis, diseño y modelo documental |
+- **Cliente:** `black-vault-angular-client/` (Angular 21 + Angular Material)
+- **Servidor:** `black-vault-express-server/` (Node.js 24 + Express 5)
+- **Base de datos:** MongoDB 9.0 (el contenido de los archivos va en GridFS)
+- **Documentación:** `docs/` (manual técnico, manual de usuario y diagramas UML)
 
 ## Requisitos
 
-- Windows 10/11 (o cualquier sistema con las mismas versiones)
 - Node.js 24.12 o superior
-- MongoDB 9.0 ejecutándose en `127.0.0.1:27017` (servicio "MongoDB" en Windows)
-- MongoDB Compass (opcional, para explorar los datos)
+- MongoDB 9.0 ejecutándose en `127.0.0.1:27017`
 
-## Puesta en marcha
-
-### 1. Servidor
+## 1. Levantar el servidor
 
 ```powershell
 cd black-vault-express-server
 copy .env.example .env
 npm install
-npm run semilla
 npm run dev
 ```
 
-- En `.env`, cambia `JWT_SECRETO` por una cadena aleatoria de 32 caracteres o más. Puedes generarla con
-  `node -e "console.log(require('crypto').randomBytes(48).toString('base64url'))"`.
-- `npm run semilla` **borra y vuelve a crear** la base `black_vault` con sus colecciones, validadores, índices y los datos de demostración, y al final verifica su integridad. Pide confirmación (escribe `SI`); con `npm run semilla -- --forzar` no pregunta.
-- `npm run integridad` revisa la consistencia de la base (espacio usado, papelera, jerarquía de carpetas, contenido en GridFS y comparticiones). Con `npm run integridad -- --reparar` corrige lo que se puede corregir sin decidir por el usuario. El administrador ve el mismo informe en **Administración → Integridad**.
-- `npm run dev` arranca la API. Si la base no existe, crea sus colecciones, validadores e índices (vacías). Comprueba que responde en <http://localhost:8000/api/salud>.
+En `.env`, cambia `JWT_SECRETO` por una cadena aleatoria de 32 caracteres o más. La API queda en <http://localhost:8000/api/salud>.
 
-### 2. Cliente
+## 2. Cargar la base de datos
+
+Con MongoDB encendido, desde `black-vault-express-server`:
+
+```powershell
+npm run semilla
+```
+
+**Borra y vuelve a crear** la base `black_vault` con los datos de demostración (usuarios, carpetas, archivos, comparticiones e historial). Pide escribir `SI` para confirmar; `npm run semilla -- --forzar` no pregunta.
+
+## 3. Levantar el cliente
 
 ```powershell
 cd black-vault-angular-client
@@ -42,144 +41,33 @@ npm install
 npm start
 ```
 
-Abre <http://localhost:4200>. El indicador de la barra superior muestra si la API y MongoDB están conectados.
-
-### Pruebas
-
-```powershell
-# Servidor (usa una base aparte: black_vault_pruebas)
-cd black-vault-express-server
-npm test
-
-# Cliente
-cd black-vault-angular-client
-npx ng test --watch=false
-```
+Abre <http://localhost:4200>.
 
 ## Usuarios de demostración
 
-Los crea `npm run semilla`. Se puede entrar con el usuario o con el correo (`usuario@blackvault.gt`).
+Se puede entrar con el usuario o con el correo (`usuario@blackvault.gt`).
 
-| Usuario | Nombre | Rol | Contraseña |
-|---|---|---|---|
-| `admin` | Administrador del Sistema | Administrador | `Admin2026` |
-| `mlopez` | María Fernanda López | Usuario | `Usuario2026` |
-| `jramirez` | José Antonio Ramírez | Usuario | `Usuario2026` |
-| `agarcia` | Ana Lucía García | Usuario | `Usuario2026` |
-| `cmorales` | Carlos Eduardo Morales | Usuario | `Usuario2026` |
-| `smendez` | Sofía Alejandra Méndez | Usuario | `Usuario2026` |
-| `rcastillo` | Ricardo Castillo Ordóñez | Usuario | `Usuario2026` |
-| `lhernandez` | Laura Beatriz Hernández | Usuario | `Usuario2026` |
-| `dperez` | Diego Andrés Pérez | Usuario | `Usuario2026` |
-| `vrodriguez` | Valeria Rodríguez Muñoz | Usuario | `Usuario2026` |
-| `fsoto` | Fernando Soto Cifuentes | Usuario | `Usuario2026` |
-| `pjuarez` | Paola Juárez Estrada | Usuario (**inactiva**) | `Usuario2026` |
-
-`pjuarez` está desactivada a propósito: no puede iniciar sesión, pero su información se conserva.
-
-### Documentos de demostración
-
-La semilla también carga **57 archivos** (.txt y .md) en **38 carpetas** repartidas entre 11 usuarios, con categorías,
-etiquetas y fechas de 2026. El contenido se guarda en GridFS (bucket `contenidos`) y el espacio usado de cada usuario
-coincide con la suma de sus archivos. Algunos casos para probar:
-
-| Usuario | Qué mirar |
-|---|---|
-| `mlopez` | `Contratos/2026/Clientes` (tres niveles), y `Notas de Windows.txt`, que tiene BOM y saltos CRLF: al editarlo y descargarlo se conservan. |
-| `jramirez` | `Registro antiguo de caja chica.txt` está en Latin-1: se puede ver y descargar, pero no editar, para no dañarlo. |
-| cualquiera | **Búsqueda**: por nombre o por texto, con filtros de tipo, categoría, etiqueta y rango de fechas. |
-
-También hay **34 comparticiones** entre áreas y **20 comentarios**. Casos para probar el acceso:
-
-| Usuario | Qué mirar |
-|---|---|
-| `mlopez` | **Compartidos → Por mí**: `Contratos/2026` lo ve Laura (lectura) y la subcarpeta `Clientes` la comenta José. Desde el menú de un archivo o carpeta, **Compartir** muestra el acceso directo y el heredado. |
-| `jramirez` | **Compartidos → Conmigo → Clientes**: puede leer y comentar los contratos, pero no editarlos. |
-| `lhernandez` | Ve los contratos de 2026 (heredado de la carpeta) solo con lectura: los comentarios se ven, pero no puede escribir. |
-| `dperez` | Tiene edición en `Proyecto Atlas` de Sofía: el *checklist* que subió allí es de Sofía y usa su espacio. |
-| `agarcia` | Sigue viendo el informe que le compartió `pjuarez` antes de que su cuenta se desactivara. |
-
-En la **papelera** hay 6 archivos:
-
-| Usuario | Qué mirar |
-|---|---|
-| `cmorales` | La carpeta `Procedimientos` se fue con todo su contenido; `Inventario de papelería.txt` se había eliminado antes por separado y, como su carpeta está en la papelera, al restaurarlo vuelve a **Mi unidad**. `Reporte semanal 23.txt` se eliminó de una carpeta que sigue activa. |
-| `lhernandez`, `smendez` | Un archivo suelto cada una. |
-| cualquiera | **Actividad** muestra el historial con frases ("Tú restauraste…", "María compartió «Clientes» contigo"). Desde **Detalles → Ver actividad**, la línea de tiempo de un archivo o carpeta propios. |
-| `admin` | **Actividad** de todo el sistema con filtro por usuario y la IP de cada acción, e **Integridad**. |
-
-Enviar a la papelera no pide confirmación: el aviso ofrece **Deshacer**. Eliminar definitivamente y vaciar sí la piden, y liberan el espacio.
-
-### Historial
-
-La semilla deja **717 actividades** de mayo a octubre de 2026 que cuentan la misma historia que los documentos: 19 ediciones (la versión de cada archivo coincide), 5 cambios de nombre, 4 movimientos, 5 cambios de clasificación, 2 comentarios borrados, intentos fallidos de inicio de sesión, cambios de contraseña, acciones del administrador y lecturas y descargas en horario de oficina. La carga verifica que cada acción la hiciera alguien con el permiso necesario en esa fecha, con la cuenta activa y sobre algo que no estaba en la papelera.
-
-| Usuario | Qué mirar |
-|---|---|
-| `smendez` | **Detalles → Ver actividad** de `Cronograma Atlas.txt`: lo editó Diego (con permiso de edición) y luego ella; va en la versión 3. La carpeta `Reuniones` se movió desde `Proyectos`. |
-| `cmorales` | La carpeta `Reportes semanales` se llamaba `Reportes`: el historial anterior al cambio la nombra como era entonces. |
-| `lhernandez` | `Tarifario 2026.txt` se subió a la raíz y después se movió a `Propuestas` (entonces `Propuestas comerciales`). |
-| `admin` | **Actividad** con el filtro de autenticación: dos intentos fallidos de José, el de `pjuarez` con la cuenta inactiva, y Fernando desactivado por error y reactivado 12 minutos después. La cuota de María subió de 100 a 200 MB. |
-
-### Reportes
-
-Con `admin`, **Administración → Reportes** reúne el panel general y los 12 reportes del enunciado, calculados en MongoDB con aggregation pipelines. Cada uno tiene filtros, gráfica y tabla, y la tabla se puede descargar en CSV.
-
-| Código | Reporte | Para probar |
+| Usuario | Rol | Contraseña |
 |---|---|---|
-| RR-01 | Archivos por tipo (y por categoría) | Activa "Incluir la papelera": los .txt suben de 19 a 22. |
-| RR-02 | Archivos por rango de fechas | Con 2 meses o menos, la gráfica es por día; con más, por semana. |
-| RR-03 | Archivos con más operaciones | Aparecen también los eliminados definitivamente, porque salen del historial. |
-| RR-04 | Top 10 usuarios con más archivos | Las barras separan activos y papelera. |
-| RR-05 | Usuarios que más comparten | Recursos, comparticiones, personas y permisos. |
-| RR-06 | Archivos compartidos con más usuarios | Acceso directo y heredado de carpetas, sin repetir personas. |
-| RR-07 / RR-08 | Compartidos y recibidos por un usuario | Elige a `pjuarez` (inactiva): lo que compartió sigue ahí. |
-| RR-09 | Actividad de un usuario | Por rango de fechas y categoría, con la IP. |
-| RR-10 | Operaciones por tipo | Cada acción dentro de su categoría. |
-| RR-11 | Operaciones por período | Por día, semana (desde el lunes) o mes; los períodos sin actividad salen en cero. |
-| RR-12 | Principales acciones | Porcentaje del total, usuarios distintos y quién más las realiza. |
+| `admin` | Administrador | `Admin2026` |
+| `mlopez`, `jramirez`, `agarcia`, `cmorales`, `smendez`, `rcastillo`, `lhernandez`, `dperez`, `vrodriguez`, `fsoto` | Usuario | `Usuario2026` |
+| `pjuarez` | Usuario **desactivado** (no puede entrar) | `Usuario2026` |
 
-## MongoDB con autenticación
+## Otros comandos (en `black-vault-express-server`)
 
-Si tu instancia exige usuario y contraseña, crea un usuario solo para la aplicación. En la consola mongosh de Compass, conectado como administrador:
+| Comando | Qué hace |
+|---|---|
+| `npm run integridad` | Revisa que los datos de la base sean consistentes |
+| `npm test` | Pruebas del servidor (usa otra base: `black_vault_pruebas`) |
 
-```js
-use admin
-db.createUser({
-  user: "blackvault",
-  pwd: "TU_CLAVE",
-  roles: [
-    { role: "readWrite", db: "black_vault" },         { role: "dbAdmin", db: "black_vault" },
-    { role: "readWrite", db: "black_vault_pruebas" }, { role: "dbAdmin", db: "black_vault_pruebas" }
-  ]
-})
+Las pruebas del cliente se corren con `npx ng test --watch=false` en `black-vault-angular-client`.
+
+## Si MongoDB pide usuario y contraseña
+
+Cambia `URI_MONGODB` en `.env`:
+
+```
+URI_MONGODB=mongodb://USUARIO:CLAVE@127.0.0.1:27017/black_vault?authSource=admin
 ```
 
-Y en `.env`: `URI_MONGODB=mongodb://blackvault:TU_CLAVE@127.0.0.1:27017/black_vault?authSource=admin`.
-Si la clave tiene símbolos, van codificados (`@` → `%40`, `#` → `%23`, `:` → `%3A`, `/` → `%2F`, `%` → `%25`).
-
-## Transacciones (opcional)
-
-Una instalación normal de MongoDB es *standalone*: el servidor lo detecta y ejecuta las operaciones compuestas en orden y con compensación. Si conviertes la instancia en un replica set de un nodo, usará transacciones automáticamente:
-
-1. En `C:\Program Files\MongoDB\Server\9.0\bin\mongod.cfg` agrega:
-   ```yaml
-   replication:
-     replSetName: rs0
-   ```
-2. Reinicia el servicio "MongoDB" y, en la consola mongosh de Compass, ejecuta `rs.initiate()`.
-3. En `.env`: `URI_MONGODB=mongodb://127.0.0.1:27017/black_vault?replicaSet=rs0`.
-
-## Estado del desarrollo
-
-| Fase | Contenido | Estado |
-|---|---|---|
-| 0 | Análisis y diseño | ✅ |
-| 1 | Base del servidor y del cliente | ✅ |
-| 2 | Autenticación y usuarios | ✅ |
-| 3 | Carpetas y archivos | ✅ |
-| 4 | Compartición y comentarios | ✅ |
-| 5 | Papelera e historial | ✅ |
-| 6 | Reportes | ✅ |
-| 7 | Carga inicial completa | ✅ |
-| 8 | Documentación y entrega | ⏳ |
+Si la clave tiene símbolos, van codificados: `@` → `%40`, `#` → `%23`, `:` → `%3A`, `/` → `%2F`, `%` → `%25`.
