@@ -150,5 +150,6 @@ export function prepararComparticiones(usuarios, carpetas, archivos) {
   }
   for (const lista of comentarios.values()) lista.sort((a, b) => a.creadoEn - b.creadoEn);
 
-  return { comparticiones, comentarios, actividades };
+  // nivelEn: permiso de un usuario sobre un documento en una fecha (lo usa el resto del historial).
+  return { comparticiones, comentarios, actividades, nivelEn };
 }
