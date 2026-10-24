@@ -12,6 +12,7 @@
     "dev": "node --watch --env-file-if-exists=.env src/servidor.js",
     "start": "node --env-file-if-exists=.env src/servidor.js",
     "semilla": "node --env-file-if-exists=.env scripts/semilla.js",
+    "integridad": "node --env-file-if-exists=.env scripts/integridad.js",
     "test": "node --env-file-if-exists=.env --test --test-concurrency=1 \"pruebas/**/*.test.js\""
   },
   "dependencies": {

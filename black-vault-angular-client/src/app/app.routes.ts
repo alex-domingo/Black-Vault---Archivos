@@ -53,24 +53,12 @@ export const routes: Routes = [
       {
         path: 'papelera',
         title: 'Papelera · Black Vault',
-        loadComponent: enConstruccion,
-        data: {
-          titulo: 'Papelera',
-          icono: 'delete',
-          fase: 5,
-          descripcion: 'Restaura o elimina definitivamente lo que enviaste a la papelera.',
-        },
+        loadComponent: () => import('./paginas/papelera/papelera').then((m) => m.Papelera),
       },
       {
         path: 'actividad',
         title: 'Actividad · Black Vault',
-        loadComponent: enConstruccion,
-        data: {
-          titulo: 'Actividad',
-          icono: 'history',
-          fase: 5,
-          descripcion: 'Historial de lo que hiciste y de lo que otros hicieron con tus archivos y carpetas.',
-        },
+        loadComponent: () => import('./paginas/actividad/actividad').then((m) => m.PaginaActividad),
       },
       {
         path: 'perfil',
@@ -82,6 +70,12 @@ export const routes: Routes = [
         title: 'Usuarios · Black Vault',
         canActivate: [requiereAdministrador],
         loadComponent: () => import('./paginas/administracion/usuarios/usuarios').then((m) => m.Usuarios),
+      },
+      {
+        path: 'administracion/integridad',
+        title: 'Integridad · Black Vault',
+        canActivate: [requiereAdministrador],
+        loadComponent: () => import('./paginas/administracion/integridad/integridad').then((m) => m.Integridad),
       },
       {
         path: 'administracion/reportes',

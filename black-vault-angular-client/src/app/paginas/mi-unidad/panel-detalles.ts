@@ -2,6 +2,7 @@ import { DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, inject, input, output } from '@angular/core';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { MatButtonModule } from '@angular/material/button';
+import { MatDialog } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
@@ -39,6 +40,7 @@ type Estado =
 export class PanelDetalles {
   private readonly carpetasApi = inject(CarpetasApi);
   private readonly archivosApi = inject(ArchivosApi);
+  private readonly dialogo = inject(MatDialog);
 
   readonly seleccion = input.required<SeleccionDetalle>();
   readonly cerrar = output<void>();
@@ -78,5 +80,11 @@ export class PanelDetalles {
 
   protected categoria(valor: string): string {
     return CATEGORIAS.find((c) => c.valor === valor)?.etiqueta ?? valor;
+  }
+
+  /** Línea de tiempo del elemento (solo el propietario la ve). El diálogo se carga cuando hace falta. */
+  protected async verActividad(tipo: 'carpeta' | 'archivo', id: string, nombre: string): Promise<void> {
+    const { DialogoActividadRecurso } = await import('../../compartido/componentes/dialogo-actividad-recurso/dialogo-actividad-recurso');
+    this.dialogo.open(DialogoActividadRecurso, { data: { tipo, id, nombre }, width: '640px', maxWidth: '95vw', autoFocus: 'first-heading' });
   }
 }

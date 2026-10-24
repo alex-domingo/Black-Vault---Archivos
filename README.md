@@ -30,7 +30,8 @@ npm run dev
 
 - En `.env`, cambia `JWT_SECRETO` por una cadena aleatoria de 32 caracteres o más. Puedes generarla con
   `node -e "console.log(require('crypto').randomBytes(48).toString('base64url'))"`.
-- `npm run semilla` **borra y vuelve a crear** la base `black_vault` con sus colecciones, validadores, índices y los datos de demostración. Pide confirmación (escribe `SI`); con `npm run semilla -- --forzar` no pregunta.
+- `npm run semilla` **borra y vuelve a crear** la base `black_vault` con sus colecciones, validadores, índices y los datos de demostración, y al final verifica su integridad. Pide confirmación (escribe `SI`); con `npm run semilla -- --forzar` no pregunta.
+- `npm run integridad` revisa la consistencia de la base (espacio usado, papelera, jerarquía de carpetas, contenido en GridFS y comparticiones). Con `npm run integridad -- --reparar` corrige lo que se puede corregir sin decidir por el usuario. El administrador ve el mismo informe en **Administración → Integridad**.
 - `npm run dev` arranca la API. Si la base no existe, crea sus colecciones, validadores e índices (vacías). Comprueba que responde en <http://localhost:8000/api/salud>.
 
 ### 2. Cliente
@@ -98,7 +99,16 @@ También hay **34 comparticiones** entre áreas y **20 comentarios**. Casos para
 | `dperez` | Tiene edición en `Proyecto Atlas` de Sofía: el *checklist* que subió allí es de Sofía y usa su espacio. |
 | `agarcia` | Sigue viendo el informe que le compartió `pjuarez` antes de que su cuenta se desactivara. |
 
-La papelera llega en la Fase 5; por ahora no hay archivos eliminados.
+En la **papelera** hay 6 archivos:
+
+| Usuario | Qué mirar |
+|---|---|
+| `cmorales` | La carpeta `Procedimientos` se fue con todo su contenido; `Inventario de papelería.txt` se había eliminado antes por separado y, como su carpeta está en la papelera, al restaurarlo vuelve a **Mi unidad**. `Reporte semanal 23.txt` se eliminó de una carpeta que sigue activa. |
+| `lhernandez`, `smendez` | Un archivo suelto cada una. |
+| cualquiera | **Actividad** muestra el historial con frases ("Tú restauraste…", "María compartió «Clientes» contigo"). Desde **Detalles → Ver actividad**, la línea de tiempo de un archivo o carpeta propios. |
+| `admin` | **Actividad** de todo el sistema con filtro por usuario y la IP de cada acción, e **Integridad**. |
+
+Enviar a la papelera no pide confirmación: el aviso ofrece **Deshacer**. Eliminar definitivamente y vaciar sí la piden, y liberan el espacio.
 
 ## MongoDB con autenticación
 
@@ -140,7 +150,7 @@ Una instalación normal de MongoDB es *standalone*: el servidor lo detecta y eje
 | 2 | Autenticación y usuarios | ✅ |
 | 3 | Carpetas y archivos | ✅ |
 | 4 | Compartición y comentarios | ✅ |
-| 5 | Papelera e historial | ⏳ |
+| 5 | Papelera e historial | ✅ |
 | 6 | Reportes | ⏳ |
 | 7 | Carga inicial completa | ⏳ |
 | 8 | Documentación y entrega | ⏳ |

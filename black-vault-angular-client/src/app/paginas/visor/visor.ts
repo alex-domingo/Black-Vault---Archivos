@@ -6,7 +6,7 @@ import { MatDialog } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { catchError, forkJoin, map, of, startWith, switchMap } from 'rxjs';
 import { IconoArchivo } from '../../compartido/componentes/icono-archivo/icono-archivo';
 import { VistaMarkdown } from '../../compartido/componentes/vista-markdown/vista-markdown';
@@ -16,6 +16,7 @@ import { CATEGORIAS, DetalleArchivo, NOMBRE_NIVEL, TextoArchivo, tieneNivel } fr
 import { ErrorApi } from '../../nucleo/modelos/error-api';
 import { Almacenamiento } from '../../nucleo/servicios/almacenamiento';
 import { ArchivosApi } from '../../nucleo/servicios/archivos-api';
+import { EnviarPapelera } from '../../nucleo/servicios/enviar-papelera';
 import { Notificador } from '../../nucleo/servicios/notificador';
 import { ConCambiosSinGuardar } from '../../nucleo/guardias/cambios-sin-guardar.guard';
 import { PanelDetalles } from '../mi-unidad/panel-detalles';
@@ -54,6 +55,8 @@ export class Visor implements ConCambiosSinGuardar {
   private readonly notificador = inject(Notificador);
   private readonly almacenamiento = inject(Almacenamiento);
   private readonly dialogo = inject(MatDialog);
+  private readonly papelera = inject(EnviarPapelera);
+  private readonly router = inject(Router);
 
   readonly id = input.required<string>();
 
@@ -185,6 +188,14 @@ export class Visor implements ConCambiosSinGuardar {
         autoFocus: 'first-heading', maxWidth: '95vw' })
       .afterClosed()
       .subscribe(() => this.versionDetalles.update((n) => n + 1));
+  }
+
+  /** Lo envía a la papelera y vuelve a la carpeta; el aviso permite deshacer. */
+  protected enviarAPapelera(): void {
+    const l = this.listo();
+    if (!l) return;
+    const destino = this.volverA();
+    this.papelera.enviar(l.detalle, () => void this.router.navigate(destino));
   }
 
   /** Avisa al cerrar o recargar la pestaña con cambios sin guardar. */

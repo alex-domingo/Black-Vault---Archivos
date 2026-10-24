@@ -71,6 +71,7 @@ export class Contenedor {
   protected readonly enlacesAdministracion: EnlaceNavegacion[] = [
     { ruta: '/administracion/usuarios', etiqueta: 'Usuarios', icono: 'manage_accounts' },
     { ruta: '/administracion/reportes', etiqueta: 'Reportes', icono: 'insights' },
+    { ruta: '/administracion/integridad', etiqueta: 'Integridad', icono: 'fact_check' },
   ];
 
   protected alternarMenu(): void {

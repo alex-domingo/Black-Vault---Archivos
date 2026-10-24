@@ -5,15 +5,17 @@
 // Uso:  npm run semilla              (pide confirmación)
 //       npm run semilla -- --forzar  (sin confirmación)
 //
-// Contenido actual: usuarios, carpetas, archivos en GridFS, comparticiones, comentarios
-// y su historial. Las fases siguientes agregan la papelera y el resto del historial.
+// Contenido: usuarios, carpetas, archivos en GridFS, comparticiones, comentarios, papelera
+// y su historial. Al final ejecuta la verificación de integridad.
 import { createInterface } from 'node:readline/promises';
 import { entorno, uriSinCredenciales } from '../src/config/entorno.js';
 import { conectar, desconectar } from '../src/bd/conexion.js';
 import { prepararEsquema } from '../src/bd/esquema.js';
 import { generarHash } from '../src/servicios/claves.js';
 import { CLAVE_ADMINISTRADOR, CLAVE_USUARIOS, USUARIOS_SEMILLA } from './datos-semilla/usuarios.js';
+import { verificarIntegridad } from '../src/servicios/integridad.js';
 import { prepararComparticiones } from './semilla-comparticiones.js';
+import { prepararPapelera, validarHistorialPapelera } from './semilla-papelera.js';
 import { cargarDocumentos, iniciosDeSesion } from './semilla-documentos.js';
 
 const MB = 1024 * 1024;
@@ -110,7 +112,15 @@ async function ejecutar() {
     })),
   );
 
-  const acciones = [...documentos.actividades, ...compartido.actividades];
+  // La papelera va después de compartir: lo compartido que se elimina conserva su compartición (sin efecto).
+  const papelera = prepararPapelera(usuarios, documentos.carpetas, documentos.archivos);
+  for (const nombre of ['carpetas', 'archivos']) {
+    const operaciones = papelera.escrituras.filter((e) => e.coleccion === nombre).map((e) => e.operacion);
+    if (operaciones.length) await bd.collection(nombre).bulkWrite(operaciones);
+  }
+
+  const acciones = [...documentos.actividades, ...compartido.actividades, ...papelera.actividades];
+  validarHistorialPapelera(acciones, papelera.enviados);
   const actividades = [...historialDeUsuarios(usuarios), ...acciones, ...iniciosDeSesion(acciones)].sort((a, b) => a.fecha - b.fecha);
   await bd.collection('actividades').insertMany(actividades);
 
@@ -123,9 +133,10 @@ async function ejecutar() {
   }
 
   const bytes = documentos.archivos.reduce((s, a) => s + a.contenido.bytes, 0);
+  const enPapelera = documentos.archivos.filter((a) => a.enPapelera).length;
   console.log(
     `\n✔ ${usuarios.length} usuarios · ${documentos.carpetas.length} carpetas · ${documentos.archivos.length} archivos en GridFS (${(bytes / 1024).toFixed(1)} KB)` +
-      ` · ${compartido.comparticiones.length} comparticiones · ${[...compartido.comentarios.values()].flat().length} comentarios · ${actividades.length} actividades\n`,
+      ` · ${enPapelera} en la papelera · ${compartido.comparticiones.length} comparticiones · ${[...compartido.comentarios.values()].flat().length} comentarios · ${actividades.length} actividades`,
   );
   console.table(
     usuarios.map((u) => ({
@@ -136,6 +147,13 @@ async function ejecutar() {
       contraseña: u.rol === 'administrador' ? CLAVE_ADMINISTRADOR : CLAVE_USUARIOS,
     })),
   );
+
+  const integridad = await verificarIntegridad();
+  if (!integridad.correcto) {
+    const fallas = integridad.verificaciones.filter((v) => v.problemas > 0).map((v) => `${v.titulo}: ${v.problemas}`);
+    throw new Error(`la verificación de integridad encontró problemas (${fallas.join(', ')}). Revisa con npm run integridad.`);
+  }
+  console.log('✔ Verificación de integridad: sin problemas.');
 }
 
 try {

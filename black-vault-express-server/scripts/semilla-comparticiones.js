@@ -3,6 +3,7 @@
 // comentario o archivo subido por otra persona, que tuviera el permiso necesario ese día.
 import { ObjectId } from 'mongodb';
 import { COMENTARIOS, COMPARTICIONES } from './datos-semilla/comparticiones.js';
+import { crearBuscadorDeRutas } from './semilla-rutas.js';
 
 const fechaGt = (texto) => new Date(`${texto}:00-06:00`);
 const NIVELES = { lectura: 1, comentario: 2, edicion: 3, propietario: 4 };
@@ -28,13 +29,7 @@ export function prepararComparticiones(usuarios, carpetas, archivos) {
   const porId = new Map(usuarios.map((u) => [u._id.toString(), u]));
   const usuario = (nombre) => porNombre.get(nombre) ?? (() => { throw error(`no existe el usuario "${nombre}"`); })();
 
-  // Rutas legibles → documentos ("mlopez|Contratos/2026").
-  const carpetaPorId = new Map(carpetas.map((c) => [c._id.toString(), c]));
-  const rutaDe = (doc) => [...doc.ancestros.map((id) => carpetaPorId.get(id.toString()).nombre), doc.nombre].join('/');
-  const indice = { carpeta: new Map(), archivo: new Map() };
-  for (const c of carpetas) indice.carpeta.set(`${porId.get(c.propietarioId.toString()).nombreUsuario}|${rutaDe(c)}`, c);
-  for (const a of archivos) indice.archivo.set(`${porId.get(a.propietarioId.toString()).nombreUsuario}|${rutaDe(a)}`, a);
-  const buscar = (tipo, de, ruta) => indice[tipo].get(`${de}|${ruta}`) ?? (() => { throw error(`no existe ${tipo} "${ruta}" de ${de}`); })();
+  const buscar = crearBuscadorDeRutas(usuarios, carpetas, archivos, 'Datos de comparticiones incoherentes');
 
   // ---------- Línea de tiempo de cada compartición ----------
   const lineas = COMPARTICIONES.map((entrada) => {

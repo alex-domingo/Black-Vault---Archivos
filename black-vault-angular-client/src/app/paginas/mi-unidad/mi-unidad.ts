@@ -25,6 +25,7 @@ import { ErrorApi } from '../../nucleo/modelos/error-api';
 import { Almacenamiento } from '../../nucleo/servicios/almacenamiento';
 import { ArchivosApi } from '../../nucleo/servicios/archivos-api';
 import { CarpetasApi } from '../../nucleo/servicios/carpetas-api';
+import { EnviarPapelera } from '../../nucleo/servicios/enviar-papelera';
 import { Notificador } from '../../nucleo/servicios/notificador';
 import { DatosDialogoMover, DialogoMover } from './dialogo-mover';
 import { DatosDialogoNombre, DialogoNombre } from './dialogo-nombre';
@@ -73,6 +74,7 @@ export class MiUnidad {
   private readonly notificador = inject(Notificador);
   private readonly almacenamiento = inject(Almacenamiento);
   private readonly router = inject(Router);
+  private readonly papelera = inject(EnviarPapelera);
   private readonly selectorArchivos = viewChild.required<ElementRef<HTMLInputElement>>('selectorArchivos');
 
   /** Id de la carpeta (parámetro :id de la ruta). Sin id = raíz de "Mi unidad". */
@@ -305,6 +307,12 @@ export class MiUnidad {
     if (!s || !d) return;
     const elemento = [...d.carpetas, ...d.archivos].find((e) => e._id === s.id) ?? (d.carpeta?._id === s.id ? d.carpeta : null);
     if (elemento) void this.compartir(elemento);
+  }
+
+  /** Sin confirmación: el aviso ofrece "Deshacer" (y la papelera permite restaurar después). */
+  protected enviarAPapelera(elemento: Elemento): void {
+    if (this.seleccion()?.id === elemento._id) this.seleccion.set(null);
+    this.papelera.enviar(elemento, () => this.recargar());
   }
 
   protected descargar(archivo: Archivo): void {
