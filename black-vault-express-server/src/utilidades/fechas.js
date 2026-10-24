@@ -31,3 +31,14 @@ export function finDelDia(dia, zona = entorno.ZONA_HORARIA) {
   const siguiente = new Date(Date.UTC(anio, mes - 1, d + 1)).toISOString().slice(0, 10);
   return inicioDelDia(siguiente, zona);
 }
+
+/** Fecha de hoy (AAAA-MM-DD) en la zona horaria del sistema. */
+export function hoyEnZona(zona = entorno.ZONA_HORARIA, ahora = new Date()) {
+  return new Intl.DateTimeFormat('en-CA', { timeZone: zona, year: 'numeric', month: '2-digit', day: '2-digit' }).format(ahora);
+}
+
+/** Suma días a una fecha AAAA-MM-DD (aritmética de calendario, sin zonas horarias). */
+export function sumarDias(dia, dias) {
+  const [anio, mes, d] = dia.split('-').map(Number);
+  return new Date(Date.UTC(anio, mes - 1, d + dias)).toISOString().slice(0, 10);
+}

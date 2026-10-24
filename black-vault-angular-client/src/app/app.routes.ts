@@ -3,8 +3,6 @@ import { confirmarCambiosSinGuardar } from './nucleo/guardias/cambios-sin-guarda
 import { requiereAdministrador, requiereSesion, soloSinSesion } from './nucleo/guardias/sesion.guard';
 
 /** Las secciones se cargan bajo demanda (lazy loading) para mantener pequeño el bundle inicial. */
-const enConstruccion = () => import('./paginas/en-construccion/en-construccion').then((m) => m.EnConstruccion);
-
 export const routes: Routes = [
   {
     path: 'iniciar-sesion',
@@ -81,13 +79,7 @@ export const routes: Routes = [
         path: 'administracion/reportes',
         title: 'Reportes · Black Vault',
         canActivate: [requiereAdministrador],
-        loadComponent: enConstruccion,
-        data: {
-          titulo: 'Reportes',
-          icono: 'insights',
-          fase: 6,
-          descripcion: 'Los 12 reportes de archivos, usuarios, comparticiones y actividad, con filtros y gráficas.',
-        },
+        loadComponent: () => import('./paginas/administracion/reportes/reportes').then((m) => m.Reportes),
       },
       {
         path: '**',

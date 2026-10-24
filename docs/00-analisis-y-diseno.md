@@ -605,21 +605,21 @@ Códigos: 400 `VALIDACION` · 401 `NO_AUTENTICADO` · 403 `PROHIBIDO` · 404 `NO
 
 ## 8. Reportes: aggregation pipelines
 
-Todos aceptan filtros (rango de fechas, usuario, tipo, límite) y se calculan en MongoDB.
+Todos aceptan filtros (rango de fechas, usuario, tipo, límite) y se calculan en MongoDB. Solo el administrador puede consultarlos (otro rol → **403**). Las fechas `desde`/`hasta` son días `AAAA-MM-DD` en hora de Guatemala (`hasta` incluye todo el día); los rankings aceptan `limite` de 1 a 50 (10 por defecto).
 
 | ID | Ruta | Colección | Pipeline (esencia) |
 |---|---|---|---|
 | RR-01 | `/reportes/archivos-por-tipo` | archivos | `$match {enPapelera:false}` (opción `incluirPapelera`) → `$group {_id:"$extension", cantidad:{$sum:1}, bytes:{$sum:"$contenido.bytes"}, promedio:{$avg:"$contenido.bytes"}}` → `$sort`. Extra con `$facet`: por categoría |
-| RR-02 | `/reportes/archivos-por-fecha?desde&hasta` | archivos | `$match {creadoEn:{$gte,$lt}, enPapelera:false}` (opción `incluirPapelera`) → `$sort {creadoEn:-1}` → `$facet {total:[$count], datos:[$skip,$limit,$lookup usuarios]}` |
+| RR-02 | `/reportes/archivos-por-fecha?desde&hasta` | archivos | `$match {creadoEn:{$gte,$lt}, enPapelera:false}` (opción `incluirPapelera`) → `$sort {creadoEn:-1}` → `$facet {total:[$count], datos:[$skip,$limit,$lookup usuarios]}`. Además, una serie para la gráfica: `$group` por `$dateTrunc` → `$densify`, por día si el rango es de hasta 62 días, por semana hasta ~1 año y por mes si es más largo o no hay rango (`unidadSerie` en la respuesta) |
 | RR-03 | `/reportes/archivos-mas-operaciones` | actividades | `$match {"recurso.tipo":"archivo"}` → `$group` por {archivo, acción} → `$group` por archivo (`operaciones`, `porAccion`, `ultima`) → `$sort` → `$limit` → `$lookup archivos` para el estado actual (activo, en papelera o eliminado, con el último nombre registrado) |
 | RR-04 | `/reportes/usuarios-mas-archivos` | archivos | `$group {_id:"$propietarioId", activos:{$sum:{$cond:["$enPapelera",0,1]}}, enPapelera:{$sum:{$cond:["$enPapelera",1,0]}}, bytes:{$sum:"$contenido.bytes"}}` → `$sort {activos:-1, bytes:-1}` → `$limit 10` → `$lookup usuarios`. El orden usa los archivos activos (RN-04) y la papelera se muestra aparte |
 | RR-05 | `/reportes/usuarios-mas-compartidos` | comparticiones | `$lookup` a archivos y carpetas (sin papelera) → `$group` por `propietarioId` (`$addToSet` de recursos y destinatarios, comparticiones de archivos/carpetas) → `$size` → `$sort` → `$lookup usuarios` |
 | RR-06 | `/reportes/archivos-mas-compartidos` | archivos | `$set {ruta: $concatArrays[ancestros, [_id]]}` → `$lookup comparticiones` con `localField: "ruta"` (arreglo) → usuarios directos vs. efectivos con `$filter`/`$setUnion` → `$size` → `$sort` → `$limit` |
-| RR-07 | `/reportes/compartidos-por-usuario/:usuarioId` | comparticiones | `$match {propietarioId}` → `$lookup` archivos y carpetas → `$lookup` destinatario → `$sort` |
+| RR-07 | `/reportes/compartidos-por-usuario/:usuarioId` | comparticiones | `$match {propietarioId}` → `$lookup` archivos y carpetas (con su `estado`: activo o en la papelera) → `$facet` (total, por permiso, personas distintas, página con `$lookup` del destinatario) |
 | RR-08 | `/reportes/recibidos-por-usuario/:usuarioId` | comparticiones | `$match {destinatarioId}` → `$lookup` recursos → `$lookup` propietario → `$sort` |
-| RR-09 | `/reportes/actividad-usuario/:usuarioId?desde&hasta` | actividades | `$match {"actor._id", fecha}` → `$sort {fecha:-1}` → `$facet` (total y página) |
+| RR-09 | `/reportes/actividad-usuario/:usuarioId?desde&hasta&categoria` | actividades | `$match {"actor._id", fecha}` → `$sort {fecha:-1}` → `$facet` (total y página); aparte, el desglose `$group` por categoría |
 | RR-10 | `/reportes/operaciones-por-tipo` | actividades | `$match fecha` → `$group {categoria, accion}` → `$group` por categoría con `$push` de acciones → `$sort` |
-| RR-11 | `/reportes/operaciones-por-periodo?unidad=dia\|semana\|mes` | actividades | `$group {_id: {$dateTrunc: {date:"$fecha", unit, timezone:"America/Guatemala", startOfWeek:"monday"}}}` → `$sort` → `$densify` (rellena períodos sin actividad con 0) |
+| RR-11 | `/reportes/operaciones-por-periodo?unidad=dia\|semana\|mes&categoria` | actividades | `$group {_id: {$dateTrunc: {date:"$fecha", unit, timezone:"America/Guatemala", startOfWeek:"monday"}}}` (con el desglose por categoría) → `$densify` (rellena períodos sin actividad con 0) → `$sort`. Sin rango: los últimos 30 días, 12 semanas o 6 meses. Máximo 400 períodos (**400**) |
 | RR-12 | `/reportes/principales-acciones` | actividades | `$group {accion, actor}` → `$sort` → `$group` por acción (`cantidad`, `usuariosDistintos`, `usuarioPrincipal: $first`) → `$setWindowFields` (total) → `%` del total → `$sort` → `$limit` |
 | Resumen | `/reportes/resumen` | varias | Conteos de usuarios activos/inactivos, carpetas, archivos, bytes, papelera, comparticiones y actividad de los últimos 30 días |
 
@@ -710,6 +710,7 @@ src/app/
 - Las carpetas ajenas se abren en `/compartidos/carpeta/:id` (el mismo explorador que `/mi-unidad/carpeta/:id`), para que el menú lateral marque la sección correcta y la ruta empiece en "Compartidos".
 - Las descargas usan `HttpClient` con `responseType: 'blob'` (el token va en la cabecera, así que un `<a href>` simple no sirve).
 - Markdown con `marked` y la sanitización de `[innerHTML]` de Angular.
+- Gráficas de los reportes con componentes propios en HTML/CSS (barras y columnas), con los colores del tema, tooltip por marca y leyenda cuando hay dos series; sin librerías de gráficas (`ng2-charts` exige Angular 22). Cada reporte también muestra su tabla y la exporta a CSV.
 
 ---
 
