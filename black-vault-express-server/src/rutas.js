@@ -7,6 +7,9 @@ import rutasCarpetas from './modulos/carpetas/carpetas.rutas.js';
 import rutasArchivos from './modulos/archivos/archivos.rutas.js';
 import rutasAlmacenamiento from './modulos/almacenamiento/almacenamiento.rutas.js';
 import rutasComparticiones from './modulos/comparticiones/comparticiones.rutas.js';
+import rutasPapelera from './modulos/papelera/papelera.rutas.js';
+import rutasActividades from './modulos/actividades/actividades.rutas.js';
+import rutasMantenimiento from './modulos/mantenimiento/mantenimiento.rutas.js';
 
 const api = Router();
 
@@ -17,6 +20,9 @@ api.use('/carpetas', rutasCarpetas);
 api.use('/archivos', rutasArchivos);
 api.use('/almacenamiento', rutasAlmacenamiento);
 api.use('/comparticiones', rutasComparticiones);
-// Fases siguientes: papelera, actividades, reportes y mantenimiento.
+api.use('/papelera', rutasPapelera);
+api.use('/actividades', rutasActividades);
+api.use('/mantenimiento', rutasMantenimiento);
+// Fase siguiente: reportes.
 
 export default api;

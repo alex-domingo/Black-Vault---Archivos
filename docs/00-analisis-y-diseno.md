@@ -370,6 +370,7 @@ actividades ──► usuarios/recursos  (referencias + copia de datos del momen
 | 22 | actividades | `ix_actividades_accion_fecha` | `{ accion: 1, fecha: -1 }` | — | Filtro por tipo de operación |
 | 23 | actividades | `ix_actividades_fecha` | `{ fecha: -1 }` | — | RR-10, RR-11, RR-12 por rango |
 | 24 | contenidos.files | `ix_contenidos_archivo` | `{ "metadata.archivoId": 1 }` | — | Verificación de integridad (huérfanos) |
+| 25 | actividades | `ix_actividades_afectado_fecha` | `{ "usuarioAfectado._id": 1, fecha: -1 }` | — | "Lo que otros hicieron conmigo"; tercera rama del `$or` del historial de un usuario |
 
 GridFS crea solo `{ filename: 1, uploadDate: 1 }` en `contenidos.files` y `{ files_id: 1, n: 1 }` (único) en `contenidos.chunks`.
 
@@ -472,9 +473,10 @@ Las colecciones, validadores e índices se crean al arrancar el servidor y desde
 - Solo el propietario; el elemento no está ya en la papelera.
 - **Archivo**: `$set: { enPapelera: true, papelera: { enviadoEn, enviadoPor, raizId: _id, esRaiz: true } }`.
 - **Carpeta `F`** (atómico):
-  1. `F` → `papelera: { …, raizId: F._id, esRaiz: true }`.
-  2. Carpetas y archivos con `{ ancestros: F._id, enPapelera: false }` → `enPapelera: true`, `papelera: { …, raizId: F._id, esRaiz: false }`.
+  1. Carpetas y archivos con `{ ancestros: F._id, enPapelera: false }` → `enPapelera: true`, `papelera: { …, raizId: F._id, esRaiz: false }`.
      Los descendientes que ya estaban en la papelera conservan su propia raíz.
+  2. `F` → `papelera: { …, raizId: F._id, esRaiz: true }`.
+  Sin transacciones (standalone), el contenido va primero y la carpeta al final: si el paso 2 falla, se **compensa** devolviendo a su estado activo todo lo que tenga `papelera.raizId = F._id`. Así nunca queda un elemento activo dentro de una carpeta en la papelera.
 - La ubicación (`carpetaId`/`padreId`/`ancestros`) **no cambia**, así se sabe dónde restaurar.
 - Las comparticiones se conservan pero dejan de tener efecto (el recurso es invisible para otros).
 - El espacio usado **no cambia** (I-10).
@@ -485,10 +487,11 @@ Las colecciones, validadores e índices se crean al arrancar el servidor y desde
 1. Solo el propietario; el elemento está en la papelera y `papelera.esRaiz = true`. Un elemento interno no se restaura solo: se restaura su raíz (**400**).
 2. Destino: el padre original si existe y no está en la papelera; si no, **la raíz** (I-11).
 3. Si hay un elemento activo con el mismo nombre en el destino, se renombra (`nombre (1)`).
-4. Atómico:
-   - Si el destino cambió a la raíz, se recalculan `ancestros` del elemento y, si es carpeta, de sus descendientes (mismo pipeline que 5.8 con `nuevos = []`).
-   - Archivo: `enPapelera: false, papelera: null`.
-   - Carpeta: `updateMany({ "papelera.raizId": id }, { $set: { enPapelera: false, papelera: null } })` en `carpetas` y `archivos`. Lo que se había eliminado por separado antes sigue en la papelera.
+4. Atómico, en este orden:
+   - La raíz primero, en **una sola escritura** (nombre, padre, ancestros, `enPapelera: false`, `papelera: null`). Si el nombre choca por una carrera (índice único, E11000), no cambió nada más y se reintenta con el siguiente nombre libre.
+   - Si el destino cambió a la raíz, se recalculan los `ancestros` de sus descendientes (mismo pipeline que 5.8 con `nuevos = []`).
+   - Carpeta: se reactiva lo que se fue con ella (`papelera.raizId = id`, ids reunidos antes de empezar). Lo que se había eliminado por separado antes sigue en la papelera.
+   - Sin transacciones, si un paso posterior falla se compensa: la raíz y su contenido vuelven a la papelera tal como estaban.
 5. El espacio usado no cambia. Las comparticiones vuelven a tener efecto.
 6. Historial `ARCHIVO_RESTAURADO` / `CARPETA_RESTAURADA` (destino, si se renombró, elementos restaurados).
 
@@ -531,12 +534,14 @@ Las colecciones, validadores e índices se crean al arrancar el servidor y desde
 - Política de claves: mínimo 8 caracteres con letras y números; `bcryptjs` con costo 10 (el mínimo que recomienda OWASP; `bcryptjs` es JavaScript puro y un costo mayor haría lentos el inicio de sesión y la semilla).
 
 ### 5.15 Verificación de integridad (administración)
-Pipelines que comprueban y, con un script, reparan:
-1. `usadoBytes` de cada usuario = suma de `contenido.bytes` de sus archivos (incluida la papelera).
-2. Ningún elemento activo tiene un ancestro en la papelera.
-3. `ancestros` coincide con la cadena de `padreId` (`$graphLookup`).
-4. Cada archivo tiene su contenido en GridFS y no hay contenido huérfano.
-5. Toda compartición apunta a un recurso existente.
+Pipelines que comprueban (`GET /api/mantenimiento/integridad`, página **Administración → Integridad**) y, con `npm run integridad -- --reparar`, reparan:
+1. `usadoBytes` de cada usuario = suma de `contenido.bytes` de sus archivos (incluida la papelera). **Se repara** fijando la suma.
+2. Ningún elemento activo tiene un ancestro en la papelera. **Revisión manual** (decidir si se restaura la carpeta o se envía el elemento a la papelera es del usuario).
+3. `ancestros` coincide con la cadena de `padreId` (`$graphLookup` + `$sortArray`) y todo el árbol es del mismo propietario; en archivos, `ancestros` = los de su carpeta + la carpeta. **Se repara** recalculándolos (primero carpetas, después archivos).
+4. Cada archivo tiene su contenido en GridFS (con el mismo tamaño) y no hay contenido ni trozos (`chunks`) huérfanos. **Se reparan** los huérfanos; un archivo sin contenido requiere revisión manual.
+5. Toda compartición apunta a un recurso y a un destinatario que existen, y el propietario coincide. **Se reparan** borrándolas.
+
+La carga inicial termina ejecutando la verificación y falla si encuentra problemas.
 
 ---
 
@@ -551,10 +556,11 @@ Pipelines que comprueban y, con un script, reparan:
 | `papelera` | `ARCHIVO_ENVIADO_PAPELERA`, `CARPETA_ENVIADA_PAPELERA`, `ARCHIVO_RESTAURADO`, `CARPETA_RESTAURADA`, `ARCHIVO_ELIMINADO_DEFINITIVO`, `CARPETA_ELIMINADA_DEFINITIVO`, `PAPELERA_VACIADA` |
 | `comparticiones` | `COMPARTICION_CREADA`, `COMPARTICION_MODIFICADA`, `COMPARTICION_RETIRADA` |
 
-Quién ve qué:
-- Un **usuario** ve las acciones que hizo y las que otros hicieron sobre sus recursos.
-- El **administrador** ve todo, con filtros por usuario, acción, categoría, recurso y fechas.
-- La línea de tiempo de un recurso la ven su propietario y el administrador.
+Quién ve qué (`GET /api/actividades?alcance=todo|mias|mis-recursos|conmigo`):
+- Un **usuario** ve las acciones que hizo (`mias`), las que otros hicieron sobre sus recursos (`mis-recursos`) y las que otros hicieron **con él** (`conmigo`: le compartieron algo, le quitaron un acceso, desactivaron su cuenta, intentos fallidos de entrar a su cuenta). `todo` es la unión de las tres; cada rama del `$or` usa su índice (19, 21 y 25). No ve la IP.
+- El **administrador** ve todo, con filtros por usuario (actor), acción, categoría y fechas, e incluye la IP.
+- La línea de tiempo de un recurso (`GET /api/actividades/recurso/:tipo/:id`) la ven su propietario y el administrador, también después de eliminarlo definitivamente (se reconoce al propietario por `recurso.propietarioId` en el historial). Quien solo tiene acceso compartido recibe **403**; quien no tiene acceso, **404**.
+- El cliente describe cada acción con una frase en español, en segunda persona cuando quien lee es el actor o el afectado ("Tú compartiste…", "María compartió «Plan.md» contigo").
 
 ---
 
@@ -588,8 +594,8 @@ Códigos: 400 `VALIDACION` · 401 `NO_AUTENTICADO` · 403 `PROHIBIDO` · 404 `NO
 | | `DELETE /archivos/:id/comentarios/:comentarioId` | autor o propietario |
 | Comparticiones | `GET /comparticiones/recurso/:tipo/:id` (directas y heredadas) · `POST /comparticiones` · `PATCH /comparticiones/:id` · `DELETE /comparticiones/:id` | propietario |
 | | `GET /comparticiones/conmigo` · `GET /comparticiones/realizadas` (`?tipo=&buscar=&pagina=&limite=`) | autenticado |
-| Papelera | `GET /papelera` · `POST /papelera/:tipo/:id/restaurar` · `DELETE /papelera/:tipo/:id` · `DELETE /papelera` | propietario |
-| Actividad | `GET /actividades?accion=&categoria=&desde=&hasta=&usuarioId=` | autenticado (alcance según rol) |
+| Papelera | `GET /papelera?tipo=&buscar=&pagina=&limite=` (raíces, con contenido, ubicación original y si volverán a la raíz; `$unionWith` de archivos y carpetas) · `POST /papelera/:tipo/:id/restaurar` · `DELETE /papelera/:tipo/:id` · `DELETE /papelera` | propietario |
+| Actividad | `GET /actividades?alcance=&accion=&categoria=&desde=&hasta=&usuarioId=&pagina=&limite=` (`usuarioId` solo administrador) | autenticado (alcance según rol) |
 | | `GET /actividades/recurso/:tipo/:id` | propietario o administrador |
 | Almacenamiento | `GET /almacenamiento` (usado, cuota, por tipo, en papelera) | autenticado |
 | Reportes | `GET /reportes/resumen` y los 12 de la sección 8 | administrador |
@@ -715,7 +721,7 @@ src/app/
 - **57 archivos** en GridFS: 51 activos y 6 en la papelera (la papelera se carga en la fase 7), mezcla de `.md` y `.txt`, las cuatro categorías, con etiquetas. Contenido realista en español (contratos, actas, informes, políticas). Incluye nombres con tildes y ñ, un archivo con saltos CRLF y uno con BOM.
 - **34 comparticiones vigentes** de archivos y carpetas con los 3 niveles: herencia (una carpeta y una subcarpeta compartidas con personas distintas), un archivo compartido con 6 personas, lo que compartió una usuaria hoy inactiva, y un archivo que un editor subió a una carpeta ajena (queda a nombre del dueño). El historial incluye 2 cambios de permiso y 2 retiros.
 - **20 comentarios** en archivos compartidos. La carga verifica que cada comentario y cada archivo subido por otra persona tuvieran, en su fecha, el permiso necesario.
-- **Papelera**: archivos sueltos, una carpeta con subcarpeta y archivos (cascada) y un archivo eliminado por separado dentro de una carpeta activa.
+- **Papelera** (6 archivos): archivos sueltos, una carpeta con subcarpeta y archivos (cascada) que contiene un archivo eliminado antes por separado (conserva su propia raíz y se restaurará en la raíz), y un archivo eliminado por separado dentro de una carpeta activa. El historial incluye además una restauración y dos archivos eliminados definitivamente que ya no existen en la base. La carga verifica que nada en la papelera tenga actividad posterior a su envío.
 - **~500 actividades** coherentes con todo lo anterior y repartidas de mayo a octubre de 2026.
 - El espacio usado de cada usuario se calcula a partir de sus archivos.
 

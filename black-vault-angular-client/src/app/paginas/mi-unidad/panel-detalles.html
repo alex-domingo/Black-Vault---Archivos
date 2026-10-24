@@ -98,5 +98,11 @@
         <dd>{{ e.datos.actualizadoEn | date: 'medium' }}</dd>
       }
     </dl>
+
+    @if (e.datos.acceso === 'propietario') {
+      <button mat-stroked-button class="ver-actividad" (click)="verActividad(e.tipo, e.datos._id, e.datos.nombre)">
+        <mat-icon>history</mat-icon>Ver actividad
+      </button>
+    }
   }
 </aside>

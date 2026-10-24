@@ -44,6 +44,11 @@
                 <mat-icon>save</mat-icon>{{ guardando() ? 'Guardando…' : 'Guardar' }}
               </button>
             }
+            @if (l.detalle.acceso === 'propietario' && !editando()) {
+              <button mat-icon-button (click)="enviarAPapelera()" matTooltip="Enviar a la papelera" aria-label="Enviar a la papelera">
+                <mat-icon>delete</mat-icon>
+              </button>
+            }
             <button mat-icon-button (click)="verDetalles.set(!verDetalles())" matTooltip="Detalles" aria-label="Mostrar u ocultar detalles">
               <mat-icon>info</mat-icon>
             </button>

@@ -283,6 +283,8 @@ export const COLECCIONES = {
       { key: { 'actor._id': 1, fecha: -1 }, name: 'ix_actividades_actor_fecha' },
       { key: { 'recurso._id': 1, fecha: -1 }, name: 'ix_actividades_recurso_fecha' },
       { key: { 'recurso.propietarioId': 1, fecha: -1 }, name: 'ix_actividades_propietario_fecha' },
+      // "Lo que otros hicieron conmigo" (me compartieron algo, desactivaron mi cuenta…).
+      { key: { 'usuarioAfectado._id': 1, fecha: -1 }, name: 'ix_actividades_afectado_fecha' },
       { key: { accion: 1, fecha: -1 }, name: 'ix_actividades_accion_fecha' },
       { key: { fecha: -1 }, name: 'ix_actividades_fecha' },
     ],

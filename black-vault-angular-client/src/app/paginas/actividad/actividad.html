@@ -1,0 +1,93 @@
+<header class="cabecera-pagina">
+  <h1>Actividad</h1>
+  <p>
+    @if (admin()) {
+      Historial de todo el sistema: quién hizo qué, sobre qué recurso y cuándo.
+    } @else {
+      Lo que hiciste, lo que otras personas hicieron con tus archivos y carpetas, y lo que hicieron contigo.
+    }
+  </p>
+</header>
+
+<form class="filtros" [formGroup]="filtros" novalidate>
+  @if (admin()) {
+    <mat-form-field subscriptSizing="dynamic" class="ancho">
+      <mat-label>Usuario</mat-label>
+      <mat-select formControlName="usuarioId">
+        <mat-option value="">Todos los usuarios</mat-option>
+        @for (u of usuarios(); track u._id) {
+          <mat-option [value]="u._id">{{ u.nombreCompleto }}{{ u.activo ? '' : ' (inactivo)' }}</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+  }
+  <mat-form-field subscriptSizing="dynamic" class="ancho">
+    <mat-label>Mostrar</mat-label>
+    <mat-select formControlName="alcance">
+      @for (a of alcances; track a.valor) {
+        <mat-option [value]="a.valor">{{ a.valor === 'todo' && admin() ? 'Todo el sistema' : a.etiqueta }}</mat-option>
+      }
+    </mat-select>
+  </mat-form-field>
+  <mat-form-field subscriptSizing="dynamic">
+    <mat-label>Categoría</mat-label>
+    <mat-select formControlName="categoria">
+      <mat-option value="">Todas</mat-option>
+      @for (c of categorias; track c.valor) {
+        <mat-option [value]="c.valor">{{ c.etiqueta }}</mat-option>
+      }
+    </mat-select>
+  </mat-form-field>
+  <mat-form-field subscriptSizing="dynamic" class="ancho">
+    <mat-label>Acción</mat-label>
+    <mat-select formControlName="accion">
+      <mat-option value="">Todas</mat-option>
+      @for (a of acciones(); track a.valor) {
+        <mat-option [value]="a.valor">{{ a.etiqueta }}</mat-option>
+      }
+    </mat-select>
+  </mat-form-field>
+  <mat-form-field subscriptSizing="dynamic" class="fechas">
+    <mat-label>Entre</mat-label>
+    <mat-date-range-input [rangePicker]="rango">
+      <input matStartDate formControlName="desde" placeholder="Desde" />
+      <input matEndDate formControlName="hasta" placeholder="Hasta" />
+    </mat-date-range-input>
+    <mat-datepicker-toggle matIconSuffix [for]="rango" />
+    <mat-date-range-picker #rango />
+  </mat-form-field>
+  @if (hayFiltros()) {
+    <button mat-button type="button" (click)="limpiar()"><mat-icon>filter_alt_off</mat-icon>Quitar filtros</button>
+  }
+</form>
+
+<div class="resultados">
+  @if (cargando()) {
+    <mat-progress-bar mode="indeterminate" class="carga" aria-label="Cargando" />
+  }
+  @if (error(); as texto) {
+    <p class="vacio error" role="alert">{{ texto }}</p>
+  } @else {
+    <p class="conteo" role="status">{{ total() }} evento(s)</p>
+    @if (actividades().length) {
+      <div class="panel">
+        <app-lista-actividad [actividades]="actividades()" [mostrarIp]="admin()" />
+      </div>
+    } @else if (!cargando()) {
+      <p class="vacio">
+        <mat-icon aria-hidden="true">history</mat-icon>
+        {{ hayFiltros() ? 'No hay actividad que coincida con los filtros.' : 'Todavía no hay actividad.' }}
+      </p>
+    }
+    @if (total() > 0) {
+      <mat-paginator
+        [length]="total()"
+        [pageIndex]="pagina()"
+        [pageSize]="limite()"
+        [pageSizeOptions]="[20, 50, 100]"
+        (page)="cambiarPagina($event)"
+        aria-label="Páginas del historial"
+      />
+    }
+  }
+</div>

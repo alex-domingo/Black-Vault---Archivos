@@ -44,11 +44,12 @@ export function separarExtension(nombre) {
 
 /**
  * Devuelve el primer nombre libre en el destino: "nombre.md", "nombre (1).md", "nombre (2).md"…
+ * Para carpetas (conExtension: false) el número va al final: "Versión 1.2 (1)".
  * @param {import('mongodb').Collection} coleccion
  * @param {object} filtroDestino Filtro que identifica el destino (padre y propietario).
  */
-export async function siguienteNombreLibre(coleccion, filtroDestino, nombre, { session } = {}) {
-  const { base, extension } = separarExtension(nombre);
+export async function siguienteNombreLibre(coleccion, filtroDestino, nombre, { session, conExtension = true } = {}) {
+  const { base, extension } = conExtension ? separarExtension(nombre) : { base: nombre, extension: '' };
   const sufijo = extension ? `.${extension}` : '';
   for (let n = 0; n < 1000; n++) {
     const candidato = n === 0 ? nombre : `${base} (${n})${sufijo}`;

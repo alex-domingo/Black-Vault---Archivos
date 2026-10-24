@@ -132,6 +132,9 @@
                     <button mat-menu-item (click)="mover(carpeta)"><mat-icon>drive_file_move</mat-icon><span>Mover</span></button>
                   }
                   <button mat-menu-item (click)="verDetalles(carpeta)"><mat-icon>info</mat-icon><span>Detalles</span></button>
+                  @if (esPropio()) {
+                    <button mat-menu-item class="peligro" (click)="enviarAPapelera(carpeta)"><mat-icon>delete</mat-icon><span>Enviar a la papelera</span></button>
+                  }
                 </mat-menu>
               </span>
             </div>
@@ -171,6 +174,9 @@
                     <button mat-menu-item (click)="mover(archivo)"><mat-icon>drive_file_move</mat-icon><span>Mover</span></button>
                   }
                   <button mat-menu-item (click)="verDetalles(archivo)"><mat-icon>info</mat-icon><span>Detalles</span></button>
+                  @if (esPropio()) {
+                    <button mat-menu-item class="peligro" (click)="enviarAPapelera(archivo)"><mat-icon>delete</mat-icon><span>Enviar a la papelera</span></button>
+                  }
                 </mat-menu>
               </span>
             </div>

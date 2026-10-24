@@ -1,0 +1,113 @@
+<header class="cabecera-pagina">
+  <div>
+    <h1>Papelera</h1>
+    <p>
+      Lo que está aquí no aparece en tu unidad ni para las personas con quienes lo compartiste, pero sigue ocupando espacio
+      @if (espacioEnPapelera(); as e) {
+        ({{ e.bytes | bytes }})
+      }
+      hasta que lo elimines definitivamente.
+    </p>
+  </div>
+  <button mat-stroked-button class="vaciar" (click)="vaciar()" [disabled]="vaciando() || total() === 0">
+    <mat-icon>delete_forever</mat-icon>{{ vaciando() ? 'Vaciando…' : 'Vaciar papelera' }}
+  </button>
+</header>
+
+<div class="filtros">
+  <mat-form-field class="buscar" subscriptSizing="dynamic">
+    <mat-label>Buscar por nombre</mat-label>
+    <mat-icon matPrefix aria-hidden="true">search</mat-icon>
+    <input matInput [formControl]="buscar" autocomplete="off" />
+  </mat-form-field>
+  <mat-form-field class="tipo" subscriptSizing="dynamic">
+    <mat-label>Tipo</mat-label>
+    <mat-select [formControl]="tipo">
+      <mat-option value="">Todos</mat-option>
+      <mat-option value="carpeta">Carpetas</mat-option>
+      <mat-option value="archivo">Archivos</mat-option>
+    </mat-select>
+  </mat-form-field>
+</div>
+
+<div class="resultados">
+  @if (cargando()) {
+    <mat-progress-bar mode="indeterminate" class="carga" aria-label="Cargando" />
+  }
+
+  @if (error(); as texto) {
+    <p class="vacio error" role="alert">{{ texto }}</p>
+  } @else {
+    <div class="lista" role="table" aria-label="Elementos en la papelera">
+      <div class="fila encabezado" role="row">
+        <span role="columnheader">Nombre</span>
+        <span role="columnheader" class="col-ubicacion">Estaba en</span>
+        <span role="columnheader" class="col-fecha">Eliminado</span>
+        <span role="columnheader" class="col-tamano">Tamaño</span>
+        <span role="columnheader"><span class="oculto">Acciones</span></span>
+      </div>
+      @for (e of elementos(); track e.recurso._id) {
+        <div class="fila" role="row" [class.ocupado]="ocupados().has(e.recurso._id)">
+          <span class="nombre" role="cell">
+            <app-icono-archivo [tipo]="e.tipo" [extension]="e.recurso.tipo === 'archivo' ? e.recurso.extension : undefined" />
+            <span class="texto">
+              <span class="titulo">{{ e.recurso.nombre }}</span>
+              @if (e.tipo === 'carpeta') {
+                <span class="detalle">{{ resumenContenido(e) }}</span>
+              }
+            </span>
+          </span>
+          <span class="col-ubicacion" role="cell">
+            <span class="ruta">{{ ubicacion(e) }}</span>
+            @if (e.restauraEnRaiz) {
+              <span class="aviso" matTooltip="Su carpeta ya no está disponible: al restaurarlo volverá a Mi unidad.">
+                <mat-icon aria-hidden="true">info</mat-icon>Volverá a Mi unidad
+              </span>
+            }
+          </span>
+          <span class="col-fecha" role="cell">{{ e.enviadoEn | date: 'medium' }}</span>
+          <span class="col-tamano" role="cell">{{ e.contenido.bytes | bytes }}</span>
+          <span class="acciones" role="cell">
+            <button
+              mat-icon-button
+              (click)="restaurar(e)"
+              [disabled]="ocupados().has(e.recurso._id)"
+              matTooltip="Restaurar"
+              [attr.aria-label]="'Restaurar ' + e.recurso.nombre"
+            >
+              <mat-icon>restore_from_trash</mat-icon>
+            </button>
+            <button
+              mat-icon-button
+              class="peligro"
+              (click)="eliminar(e)"
+              [disabled]="ocupados().has(e.recurso._id)"
+              matTooltip="Eliminar definitivamente"
+              [attr.aria-label]="'Eliminar definitivamente ' + e.recurso.nombre"
+            >
+              <mat-icon>delete_forever</mat-icon>
+            </button>
+          </span>
+        </div>
+      } @empty {
+        @if (!cargando()) {
+          <p class="vacio">
+            <mat-icon aria-hidden="true">delete_outline</mat-icon>
+            {{ hayFiltros() ? 'Nada coincide con los filtros.' : 'La papelera está vacía.' }}
+          </p>
+        }
+      }
+    </div>
+
+    @if (total() > 0) {
+      <mat-paginator
+        [length]="total()"
+        [pageIndex]="pagina()"
+        [pageSize]="limite()"
+        [pageSizeOptions]="[10, 20, 50]"
+        (page)="cambiarPagina($event)"
+        aria-label="Páginas de la papelera"
+      />
+    }
+  }
+</div>
