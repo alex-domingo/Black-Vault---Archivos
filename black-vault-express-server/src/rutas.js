@@ -11,6 +11,7 @@ import rutasPapelera from './modulos/papelera/papelera.rutas.js';
 import rutasActividades from './modulos/actividades/actividades.rutas.js';
 import rutasMantenimiento from './modulos/mantenimiento/mantenimiento.rutas.js';
 
+import rutasReportes from './modulos/reportes/reportes.rutas.js';
 const api = Router();
 
 api.use('/salud', rutasSalud);
@@ -23,6 +24,6 @@ api.use('/comparticiones', rutasComparticiones);
 api.use('/papelera', rutasPapelera);
 api.use('/actividades', rutasActividades);
 api.use('/mantenimiento', rutasMantenimiento);
-// Fase siguiente: reportes.
+api.use('/reportes', rutasReportes);
 
 export default api;

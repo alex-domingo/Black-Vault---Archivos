@@ -110,6 +110,24 @@ En la **papelera** hay 6 archivos:
 
 Enviar a la papelera no pide confirmación: el aviso ofrece **Deshacer**. Eliminar definitivamente y vaciar sí la piden, y liberan el espacio.
 
+### Reportes
+
+Con `admin`, **Administración → Reportes** reúne el panel general y los 12 reportes del enunciado, calculados en MongoDB con aggregation pipelines. Cada uno tiene filtros, gráfica y tabla, y la tabla se puede descargar en CSV.
+
+| Código | Reporte | Para probar |
+|---|---|---|
+| RR-01 | Archivos por tipo (y por categoría) | Activa "Incluir la papelera": los .txt suben de 19 a 22. |
+| RR-02 | Archivos por rango de fechas | Con 2 meses o menos, la gráfica es por día; con más, por semana. |
+| RR-03 | Archivos con más operaciones | Aparecen también los eliminados definitivamente, porque salen del historial. |
+| RR-04 | Top 10 usuarios con más archivos | Las barras separan activos y papelera. |
+| RR-05 | Usuarios que más comparten | Recursos, comparticiones, personas y permisos. |
+| RR-06 | Archivos compartidos con más usuarios | Acceso directo y heredado de carpetas, sin repetir personas. |
+| RR-07 / RR-08 | Compartidos y recibidos por un usuario | Elige a `pjuarez` (inactiva): lo que compartió sigue ahí. |
+| RR-09 | Actividad de un usuario | Por rango de fechas y categoría, con la IP. |
+| RR-10 | Operaciones por tipo | Cada acción dentro de su categoría. |
+| RR-11 | Operaciones por período | Por día, semana (desde el lunes) o mes; los períodos sin actividad salen en cero. |
+| RR-12 | Principales acciones | Porcentaje del total, usuarios distintos y quién más las realiza. |
+
 ## MongoDB con autenticación
 
 Si tu instancia exige usuario y contraseña, crea un usuario solo para la aplicación. En la consola mongosh de Compass, conectado como administrador:
@@ -151,6 +169,6 @@ Una instalación normal de MongoDB es *standalone*: el servidor lo detecta y eje
 | 3 | Carpetas y archivos | ✅ |
 | 4 | Compartición y comentarios | ✅ |
 | 5 | Papelera e historial | ✅ |
-| 6 | Reportes | ⏳ |
+| 6 | Reportes | ✅ |
 | 7 | Carga inicial completa | ⏳ |
 | 8 | Documentación y entrega | ⏳ |
