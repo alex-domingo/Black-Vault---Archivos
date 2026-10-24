@@ -5,8 +5,9 @@
 // Uso:  npm run semilla              (pide confirmación)
 //       npm run semilla -- --forzar  (sin confirmación)
 //
-// Contenido: usuarios, carpetas, archivos en GridFS, comparticiones, comentarios, papelera
-// y su historial. Al final ejecuta la verificación de integridad.
+// Contenido: usuarios, carpetas, archivos en GridFS, comparticiones, comentarios, papelera,
+// ediciones, cambios de nombre y de lugar, sesiones, administración de cuentas y uso cotidiano,
+// con su historial. Al final ejecuta la verificación de integridad.
 import { createInterface } from 'node:readline/promises';
 import { entorno, uriSinCredenciales } from '../src/config/entorno.js';
 import { conectar, desconectar } from '../src/bd/conexion.js';
@@ -17,6 +18,7 @@ import { verificarIntegridad } from '../src/servicios/integridad.js';
 import { prepararComparticiones } from './semilla-comparticiones.js';
 import { prepararPapelera, validarHistorialPapelera } from './semilla-papelera.js';
 import { cargarDocumentos, iniciosDeSesion } from './semilla-documentos.js';
+import { prepararHistoria } from './semilla-historia.js';
 
 const MB = 1024 * 1024;
 
@@ -119,9 +121,26 @@ async function ejecutar() {
     if (operaciones.length) await bd.collection(nombre).bulkWrite(operaciones);
   }
 
-  const acciones = [...documentos.actividades, ...compartido.actividades, ...papelera.actividades];
+  // El alta de las cuentas se registra con su cuota inicial (la historia puede cambiarla después).
+  const altas = historialDeUsuarios(usuarios);
+
+  const historia = prepararHistoria({
+    usuarios,
+    carpetas: documentos.carpetas,
+    archivos: documentos.archivos,
+    nivelEn: compartido.nivelEn,
+    enviados: papelera.enviados,
+  });
+  for (const [nombre, operaciones] of Object.entries(historia.escrituras)) {
+    if (operaciones.length) await bd.collection(nombre).bulkWrite(operaciones);
+  }
+
+  const acciones = [...documentos.actividades, ...compartido.actividades, ...papelera.actividades, ...historia.actividades];
+  historia.ajustarHistorial(acciones);
   validarHistorialPapelera(acciones, papelera.enviados);
-  const actividades = [...historialDeUsuarios(usuarios), ...acciones, ...iniciosDeSesion(acciones)].sort((a, b) => a.fecha - b.fecha);
+  const sesiones = [...altas, ...acciones, ...iniciosDeSesion(acciones)];
+  const actividades = [...sesiones, ...historia.cierresDeSesion(sesiones)].sort((a, b) => a.fecha - b.fecha);
+  historia.validarActores(actividades);
   await bd.collection('actividades').insertMany(actividades);
 
   // Último acceso de cada usuario = su último inicio de sesión registrado.

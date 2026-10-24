@@ -110,6 +110,17 @@ En la **papelera** hay 6 archivos:
 
 Enviar a la papelera no pide confirmación: el aviso ofrece **Deshacer**. Eliminar definitivamente y vaciar sí la piden, y liberan el espacio.
 
+### Historial
+
+La semilla deja **717 actividades** de mayo a octubre de 2026 que cuentan la misma historia que los documentos: 19 ediciones (la versión de cada archivo coincide), 5 cambios de nombre, 4 movimientos, 5 cambios de clasificación, 2 comentarios borrados, intentos fallidos de inicio de sesión, cambios de contraseña, acciones del administrador y lecturas y descargas en horario de oficina. La carga verifica que cada acción la hiciera alguien con el permiso necesario en esa fecha, con la cuenta activa y sobre algo que no estaba en la papelera.
+
+| Usuario | Qué mirar |
+|---|---|
+| `smendez` | **Detalles → Ver actividad** de `Cronograma Atlas.txt`: lo editó Diego (con permiso de edición) y luego ella; va en la versión 3. La carpeta `Reuniones` se movió desde `Proyectos`. |
+| `cmorales` | La carpeta `Reportes semanales` se llamaba `Reportes`: el historial anterior al cambio la nombra como era entonces. |
+| `lhernandez` | `Tarifario 2026.txt` se subió a la raíz y después se movió a `Propuestas` (entonces `Propuestas comerciales`). |
+| `admin` | **Actividad** con el filtro de autenticación: dos intentos fallidos de José, el de `pjuarez` con la cuenta inactiva, y Fernando desactivado por error y reactivado 12 minutos después. La cuota de María subió de 100 a 200 MB. |
+
 ### Reportes
 
 Con `admin`, **Administración → Reportes** reúne el panel general y los 12 reportes del enunciado, calculados en MongoDB con aggregation pipelines. Cada uno tiene filtros, gráfica y tabla, y la tabla se puede descargar en CSV.
@@ -170,5 +181,5 @@ Una instalación normal de MongoDB es *standalone*: el servidor lo detecta y eje
 | 4 | Compartición y comentarios | ✅ |
 | 5 | Papelera e historial | ✅ |
 | 6 | Reportes | ✅ |
-| 7 | Carga inicial completa | ⏳ |
+| 7 | Carga inicial completa | ✅ |
 | 8 | Documentación y entrega | ⏳ |

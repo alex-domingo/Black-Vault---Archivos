@@ -143,7 +143,8 @@ export async function cargarDocumentos(bd, usuarios) {
 /** Un inicio de sesión antes de la primera acción de cada usuario en cada día (hora de Guatemala). */
 export function iniciosDeSesion(actividades) {
   const primeraDelDia = new Map();
-  for (const a of actividades) {
+  // Un intento fallido o un cierre no implican haber entrado: no generan inicio de sesión.
+  for (const a of actividades.filter((x) => !['INICIO_SESION_FALLIDO', 'CIERRE_SESION'].includes(x.accion))) {
     const dia = new Date(a.fecha.getTime() - 6 * 3600_000).toISOString().slice(0, 10);
     const clave = `${a.actor._id}|${dia}`;
     const actual = primeraDelDia.get(clave);

@@ -93,7 +93,7 @@
 | RD-03 | 50 archivos de distintos usuarios, carpetas y tipos | 57: 51 activos + 6 en la papelera, `.md` y `.txt` |
 | RD-04 | 20 operaciones de compartición | 34 vigentes (más 2 retiradas y 2 modificadas), con los 3 niveles, archivos y carpetas, y herencia |
 | RD-05 | Recursos en la papelera | archivos sueltos y una carpeta con contenido |
-| RD-06 | Historial suficiente | ~500 eventos repartidos en 6 meses |
+| RD-06 | Historial suficiente | 717 eventos coherentes repartidos en 6 meses (mayo a octubre de 2026) |
 
 ### 1.5 Reportes (p. 5)
 
@@ -719,11 +719,18 @@ src/app/
 - Borra y recrea la base `black_vault` (pide confirmación salvo con `--forzar`), crea validadores e índices y termina ejecutando la verificación de integridad.
 - **12 usuarios**: 1 administrador y 11 usuarios de distintas áreas (legal, finanzas, recursos humanos, operaciones…), 1 de ellos inactivo con archivos e historial (demuestra RN-09). Distribución desigual de archivos para que el Top 10 se note.
 - **Carpetas**: 2–4 raíces por usuario, hasta 3 niveles (por ejemplo `Contratos/2026/Clientes`).
-- **57 archivos** en GridFS: 51 activos y 6 en la papelera (la papelera se carga en la fase 7), mezcla de `.md` y `.txt`, las cuatro categorías, con etiquetas. Contenido realista en español (contratos, actas, informes, políticas). Incluye nombres con tildes y ñ, un archivo con saltos CRLF y uno con BOM.
+- **57 archivos** en GridFS: 51 activos y 6 en la papelera, mezcla de `.md` y `.txt`, las cuatro categorías, con etiquetas. Contenido realista en español (contratos, actas, informes, políticas). Incluye nombres con tildes y ñ, un archivo con saltos CRLF y uno con BOM.
 - **34 comparticiones vigentes** de archivos y carpetas con los 3 niveles: herencia (una carpeta y una subcarpeta compartidas con personas distintas), un archivo compartido con 6 personas, lo que compartió una usuaria hoy inactiva, y un archivo que un editor subió a una carpeta ajena (queda a nombre del dueño). El historial incluye 2 cambios de permiso y 2 retiros.
 - **20 comentarios** en archivos compartidos. La carga verifica que cada comentario y cada archivo subido por otra persona tuvieran, en su fecha, el permiso necesario.
 - **Papelera** (6 archivos): archivos sueltos, una carpeta con subcarpeta y archivos (cascada) que contiene un archivo eliminado antes por separado (conserva su propia raíz y se restaurará en la raíz), y un archivo eliminado por separado dentro de una carpeta activa. El historial incluye además una restauración y dos archivos eliminados definitivamente que ya no existen en la base. La carga verifica que nada en la papelera tenga actividad posterior a su envío.
-- **~500 actividades** coherentes con todo lo anterior y repartidas de mayo a octubre de 2026.
+- **717 actividades** coherentes con todo lo anterior, de mayo a octubre de 2026 (`scripts/datos-semilla/historia.js` y `scripts/semilla-historia.js`):
+  - 19 ediciones de contenido, algunas de personas con permiso de edición; la versión del archivo y quién lo editó por última vez coinciden con el historial. No se edita el archivo en Latin-1.
+  - 5 cambios de nombre (3 archivos y 2 carpetas) y 4 movimientos (uno de carpeta, con los elementos afectados). Como el historial guarda una copia de los nombres (Extended Reference), los eventos anteriores se reescriben con el nombre y la ubicación de entonces.
+  - 5 cambios de clasificación (etiquetas o categoría) que terminan en el valor actual; 2 comentarios escritos y borrados (uno por el dueño del archivo).
+  - Sesiones: inicio al comienzo de cada día con actividad, cierres en parte de esos días, 4 intentos fallidos (uno con la cuenta inactiva) y 2 cambios de contraseña (aumentan `versionSesion`).
+  - Administración: un cambio de cuota (100 → 200 MB), un restablecimiento de contraseña y una cuenta desactivada y reactivada minutos después.
+  - Lecturas y descargas generadas con una semilla fija (mulberry32), así que la carga siempre produce lo mismo: días hábiles, de 8:00 a 17:30, solo si la persona tenía acceso en esa fecha y nunca después de que el archivo fuera a la papelera.
+  - La carga valida que nadie actúe antes de que exista su cuenta, mientras está desactivada (salvo intentar entrar) ni después del 23 de octubre de 2026.
 - El espacio usado de cada usuario se calcula a partir de sus archivos.
 
 Credenciales de prueba documentadas en el README.
